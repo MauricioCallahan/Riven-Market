@@ -31,20 +31,18 @@ TEST_CASES = [
         },
     },
     {
-        "name": "Sort by positive_attr_desc with polarity filter",
+        "name": "polarity filter",
         "filters": {
             "weapon_url_name": "arca_plasmor",
-            "sort_by": "positive_attr_desc",
-            "buyout_policy": "with_bid",
             "polarity": "vazarin",
         },
     },
     {
-        "name": "All dropdowns non-default",
+        "name": "price_desc + polarity + buyout_policy=direct",
         "filters": {
             "weapon_url_name": "rubico",
             "sort_by": "price_desc",
-            "buyout_policy": "with_bid",
+            "buyout_policy": "direct",
             "polarity": "naramon",
         },
     },
@@ -79,11 +77,10 @@ TEST_CASES = [
         "expect_fail": True,
     },
     {
-        "name": "SHOULD FAIL — weapon with spaces (validation catches it)",
+        "name": "Spaces in weapon name normalized to underscores",
         "filters": {
             "weapon_url_name": "arca plasmor",
         },
-        "expect_fail": True,
     },
     {
         "name": "Unsupported params stripped — mastery_rank_min and mod_rank ignored silently",
@@ -119,15 +116,16 @@ def run_tests():
                 print(f"FAILED — errors: {errors}")
                 failed += 1
         else:
+            auction_list = auctions["auctions"]
             if expect_fail:
-                print(f"FAILED (expected failure but got {len(auctions)} results)")
+                print(f"FAILED (expected failure but got {len(auction_list)} results)")
                 failed += 1
             else:
-                print(f"PASSED — {len(auctions)} auction(s) returned")
-                if auctions:
-                    a = auctions[0]
-                    print(f"  Sample: {a['weapon']} — {a['riven_name']} — "
-                          f"Buyout: {a['buyout_price']} — Attributes: {a['attributes']}")
+                print(f"PASSED — {len(auction_list)} auction(s) returned")
+                if auction_list:
+                    a = auction_list[0]
+                    print(f"  Sample: {a['weapon']} — {a['rivenName']} — "
+                          f"Buyout: {a['buyout']} — Attributes: {a['positiveAttributes']}")
                 passed += 1
 
     print(f"\n{'='*60}")

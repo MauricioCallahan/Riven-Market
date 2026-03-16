@@ -1,3 +1,4 @@
+import os
 from server import app
 import cache
 
@@ -8,8 +9,9 @@ def main():
     # Starts the Flask API server on port 5000.
     # The React frontend (frontend/) proxies /api requests here via Vite's dev server.
     # Start the frontend separately: cd frontend && npm run dev
+    debug = os.environ.get("FLASK_DEBUG", "").lower() in ("1", "true")
     print("Starting Riven Market API on http://localhost:5000")
-    app.run(port=5000, debug=True)
+    app.run(port=5000, debug=debug)
 
 
 if __name__ == "__main__":

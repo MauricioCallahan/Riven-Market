@@ -137,8 +137,6 @@ def build_params(filters):
         "mastery_rank_max": filters.get("mastery_rank_max"),
         "re_rolls_min": filters.get("re_rolls_min"),
         "re_rolls_max": filters.get("re_rolls_max"),
-        "mastery_rank_min": filters.get("mastery_rank_min"),
-        "mod_rank": filters.get("mod_rank"),
     }
 
     # Remove None values so they are not included in the API request

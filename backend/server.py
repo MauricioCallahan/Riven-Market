@@ -7,9 +7,14 @@ app = Flask(__name__)
 
 
 def _int_or_none(value: str):
-    # Converts a query string value to int, returns None if blank or missing.
+    # Converts a query string value to int, returns None if blank, missing, or non-numeric.
     v = (value or "").strip()
-    return int(v) if v else None
+    if not v:
+        return None
+    try:
+        return int(v)
+    except (ValueError, OverflowError):
+        return None
 
 
 def _str_or_none(value: str):

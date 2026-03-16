@@ -11,18 +11,13 @@ can populate dropdowns without hitting the API on every page load.
 
 import json
 import os
-import time
 import threading
 import requests
 from datetime import datetime, timezone, timedelta
 from config import API_HEADERS, API_BASE_URL, WARFRAMESTAT_WEAPONS_URL
+from api_client import _rate_limited_get
 CACHE_DIR = os.path.join(os.path.dirname(__file__), ".cache")
 CACHE_TTL = timedelta(hours=24)
-
-# Rate-limit: minimum seconds between API requests
-_rate_lock = threading.Lock()
-_last_request_time = 0.0
-_MIN_REQUEST_INTERVAL = 0.34  # ~3 requests/sec
 
 # In-memory cache (populated from disk on startup, refreshed periodically)
 _weapons: list[dict] | None = None
@@ -42,30 +37,6 @@ _NAME_OVERRIDES: dict[str, str] = {
     # Add mappings here as needed, e.g.:
     # "Vinquibus (Melee)": "Venka Prime",
 }
-
-
-def _rate_limited_get(url: str, headers: dict, timeout: int = 10) -> requests.Response:
-    """GET with rate limiting and retry on 429."""
-    global _last_request_time
-    max_retries = 3
-    for attempt in range(max_retries):
-        with _rate_lock:
-            elapsed = time.time() - _last_request_time
-            if elapsed < _MIN_REQUEST_INTERVAL:
-                time.sleep(_MIN_REQUEST_INTERVAL - elapsed)
-            _last_request_time = time.time()
-
-        resp = requests.get(url, headers=headers, timeout=timeout)
-        if resp.status_code == 429:
-            wait = float(resp.headers.get("Retry-After", 2 * (attempt + 1)))
-            print(f"[cache] 429 rate-limited, retrying in {wait}s (attempt {attempt + 1}/{max_retries})")
-            time.sleep(wait)
-            continue
-        resp.raise_for_status()
-        return resp
-    # If still 429 after retries, raise
-    resp.raise_for_status()
-    return resp  # unreachable, but keeps type checker happy
 
 
 # ---------------------------------------------------------------------------
