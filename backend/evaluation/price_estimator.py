@@ -26,7 +26,7 @@ _SIMILARITY_THRESHOLD = 0.35
 _MAX_COMPARABLES = 20
 # Age decay divisor for standard vs high-value listings
 _AGE_DECAY_STANDARD = 30.0    # 30d → 0.5× weight
-_AGE_DECAY_HIGH_VALUE = 90.0  # 90d → 0.5× weight (expensive rivens have smaller buyer pool)
+_AGE_DECAY_HIGH_VALUE = 120.0  # 120d → 0.5× weight (expensive rivens have smaller buyer pool)
 
 
 # ---------------------------------------------------------------------------
@@ -91,7 +91,7 @@ def _age_factor(auction: Auction, price: float | None, price_threshold: float) -
     """Compute age-based downweight factor.
 
     price: pre-extracted effective price (buyout or starting).
-    Listings above the P75 price threshold get a gentler 90-day decay;
+    Listings above the P75 price threshold get a gentler 120-day decay;
     lower-priced listings use the standard 30-day decay.
     """
     if auction.updated is None:
