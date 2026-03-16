@@ -65,7 +65,7 @@ def classify_attributes(positive_url_names: list[str] | set[str]) -> str:
 
 def classify_auction(auction: Auction) -> str:
     """Classify an auction's riven based on its positive attributes."""
-    pos_names = [a.url_name for a in auction.positive_attributes()]
+    pos_names = [a.url_name for a in auction.positive_attributes]
     return classify_attributes(pos_names)
 
 

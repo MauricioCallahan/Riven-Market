@@ -27,11 +27,15 @@ _MIN_REQUEST_INTERVAL = 0.34  # ~3 requests/sec
 # In-memory cache (populated from disk on startup, refreshed periodically)
 _weapons: list[dict] | None = None
 _attributes: list[dict] | None = None
-_dispositions: list[dict] | None = None
 _disposition_map: dict[str, int] | None = None
 _weapons_lock = threading.Lock()
 _attributes_lock = threading.Lock()
 _dispositions_lock = threading.Lock()
+
+# Derived caches — invalidated when source data changes
+_merged_weapons: list[dict] | None = None
+_positive_attr_names: set[str] | None = None
+_negative_attr_names: set[str] | None = None
 
 # Edge-case name overrides: warframe.market item_name → warframestat.us name
 _NAME_OVERRIDES: dict[str, str] = {
@@ -186,84 +190,63 @@ def _refresh_cache(name: str, fetch_fn, mem_lock: threading.Lock, setter):
 
 
 def _set_weapons(data):
-    global _weapons
+    global _weapons, _merged_weapons
     _weapons = data
+    _merged_weapons = None  # invalidate derived cache
 
 
 def _set_attributes(data):
-    global _attributes
+    global _attributes, _positive_attr_names, _negative_attr_names
     _attributes = data
+    _positive_attr_names = None  # invalidate derived caches
+    _negative_attr_names = None
 
 
 def _set_dispositions(data):
-    global _dispositions, _disposition_map
-    _dispositions = data
+    global _disposition_map, _merged_weapons
     _disposition_map = _build_disposition_map(data) if data else None
+    _merged_weapons = None  # invalidate derived cache
+
+
+# (name, fetch_fn, lock, setter) for each cached resource
+_CACHE_ENTRIES = [
+    ("weapons",      _fetch_weapons,      _weapons_lock,      _set_weapons),
+    ("attributes",   _fetch_attributes,   _attributes_lock,   _set_attributes),
+    ("dispositions", _fetch_dispositions, _dispositions_lock, _set_dispositions),
+]
 
 
 def init_cache():
-    """
-    Load cache from disk on startup. If stale or missing, refresh from API
-    in background threads so the server starts immediately.
-    """
-    global _weapons, _attributes, _dispositions
+    """Load cache from disk on startup. Refresh stale entries in background."""
+    for name, fetch_fn, lock, setter in _CACHE_ENTRIES:
+        data, fetched_at = _read_disk_cache(name)
+        if data is not None:
+            with lock:
+                setter(data)
+            print(f"[cache] Loaded {len(data)} {name} from disk cache")
 
-    # Load weapons from disk
-    w_data, w_time = _read_disk_cache("weapons")
-    if w_data is not None:
-        with _weapons_lock:
-            _weapons = w_data
-        print(f"[cache] Loaded {len(w_data)} weapons from disk cache")
-
-    # Load attributes from disk
-    a_data, a_time = _read_disk_cache("attributes")
-    if a_data is not None:
-        with _attributes_lock:
-            _attributes = a_data
-        print(f"[cache] Loaded {len(a_data)} attributes from disk cache")
-
-    # Load dispositions from disk
-    d_data, d_time = _read_disk_cache("dispositions")
-    if d_data is not None:
-        with _dispositions_lock:
-            _dispositions = d_data
-            _disposition_map = _build_disposition_map(d_data)
-        print(f"[cache] Loaded {len(d_data)} dispositions from disk cache")
-
-    # Refresh stale caches in background
-    if _is_stale(w_time):
-        print("[cache] Weapons cache is stale — refreshing in background")
-        threading.Thread(
-            target=_refresh_cache,
-            args=("weapons", _fetch_weapons, _weapons_lock, _set_weapons),
-            daemon=True,
-        ).start()
-
-    if _is_stale(a_time):
-        print("[cache] Attributes cache is stale — refreshing in background")
-        threading.Thread(
-            target=_refresh_cache,
-            args=("attributes", _fetch_attributes, _attributes_lock, _set_attributes),
-            daemon=True,
-        ).start()
-
-    if _is_stale(d_time):
-        print("[cache] Dispositions cache is stale — refreshing in background")
-        threading.Thread(
-            target=_refresh_cache,
-            args=("dispositions", _fetch_dispositions, _dispositions_lock, _set_dispositions),
-            daemon=True,
-        ).start()
+        if _is_stale(fetched_at):
+            print(f"[cache] {name.capitalize()} cache is stale — refreshing in background")
+            threading.Thread(
+                target=_refresh_cache,
+                args=(name, fetch_fn, lock, setter),
+                daemon=True,
+            ).start()
 
 
 def get_weapons() -> list[dict] | None:
     """Return cached weapons list with disposition merged in, or None if not yet available."""
+    global _merged_weapons
+
+    # Return cached merge if available
+    if _merged_weapons is not None:
+        return _merged_weapons
+
     with _weapons_lock:
         weapons = _weapons
     if weapons is None:
         return None
 
-    # Use cached disposition map
     with _dispositions_lock:
         dispo_map = _disposition_map or {}
 
@@ -272,7 +255,6 @@ def get_weapons() -> list[dict] | None:
     unmatched = []
     for w in weapons:
         item_name = w.get("item_name", "")
-        # Check overrides first, then fall back to lowercase match
         lookup_name = _NAME_OVERRIDES.get(item_name, item_name).lower()
         disposition = dispo_map.get(lookup_name, 3)
         result.append({**w, "disposition": disposition})
@@ -284,6 +266,7 @@ def get_weapons() -> list[dict] | None:
     elif unmatched:
         print(f"[cache] {len(unmatched)} weapons with no disposition match (defaulting to 3)")
 
+    _merged_weapons = result
     return result
 
 
@@ -305,15 +288,23 @@ def get_attributes() -> list[dict] | None:
 
 def get_positive_attribute_names() -> set[str]:
     """All attribute url_names that can be used as positive stats."""
+    global _positive_attr_names
+    if _positive_attr_names is not None:
+        return _positive_attr_names
     attrs = get_attributes()
     if not attrs:
         return set()
-    return {a["url_name"] for a in attrs if not a.get("search_only", False)}
+    _positive_attr_names = {a["url_name"] for a in attrs if not a.get("search_only", False)}
+    return _positive_attr_names
 
 
 def get_negative_attribute_names() -> set[str]:
     """Attribute url_names that can be used as negative stats (excludes positive_only)."""
+    global _negative_attr_names
+    if _negative_attr_names is not None:
+        return _negative_attr_names
     attrs = get_attributes()
     if not attrs:
         return set()
-    return {a["url_name"] for a in attrs if not a.get("positive_only", False) and not a.get("search_only", False)}
+    _negative_attr_names = {a["url_name"] for a in attrs if not a.get("positive_only", False) and not a.get("search_only", False)}
+    return _negative_attr_names

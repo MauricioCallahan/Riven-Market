@@ -138,9 +138,9 @@ def _cosine_similarity(vec_a: dict[str, float], vec_b: dict[str, float]) -> floa
 
     Returns 0.0 if either vector has zero magnitude.
     """
-    # Dot product — only iterate over shared keys
-    all_keys = set(vec_a) | set(vec_b)
-    dot = sum(vec_a.get(k, 0.0) * vec_b.get(k, 0.0) for k in all_keys)
+    # Dot product — only shared keys contribute (missing key × anything = 0)
+    shared_keys = set(vec_a) & set(vec_b)
+    dot = sum(vec_a[k] * vec_b[k] for k in shared_keys)
 
     mag_a = math.sqrt(sum(v * v for v in vec_a.values()))
     mag_b = math.sqrt(sum(v * v for v in vec_b.values()))
@@ -210,8 +210,8 @@ def compute_similarity(
     Returns a float — typically 0.0 to ~1.1 (can exceed 1.0 from bonuses).
     """
     # Build auction vector
-    num_pos = len(auction.positive_attributes())
-    has_neg = len(auction.negative_attributes()) > 0
+    num_pos = len(auction.positive_attributes)
+    has_neg = len(auction.negative_attributes) > 0
 
     auction_vector = build_stat_vector(
         attributes=auction.attributes,
@@ -225,7 +225,7 @@ def compute_similarity(
     cos_sim = _cosine_similarity(target_vector, auction_vector)
 
     # Negative adjustment
-    candidate_neg_names = {a.url_name for a in auction.negative_attributes()}
+    candidate_neg_names = {a.url_name for a in auction.negative_attributes}
     neg_adj = _negative_adjustment(target_neg_names, candidate_neg_names)
 
     # Reroll penalty

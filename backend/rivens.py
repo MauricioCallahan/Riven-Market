@@ -149,37 +149,11 @@ def build_params(filters):
 # Search — orchestrate the full search pipeline
 # ---------------------------------------------------------------------------
 
-def fetch_weapon_auctions(weapon_url_name, platform="pc", crossplay="true", sort_by="price_desc"):
-    # Fetch all auctions for a weapon and return Auction objects.
-    # Validates the weapon name and platform, but applies no stat filters.
-    # Returns (list[Auction], None) on success or (None, error_list) on failure.
-    filters = normalize_filters({
-        "weapon_url_name": weapon_url_name,
-        "sort_by": sort_by,
-        "platform": platform,
-        "crossplay": crossplay,
-    })
-    errors = validate_filters(filters)
-    if errors:
-        return None, errors
+def _execute_search(filters: dict) -> tuple[list[Auction] | None, list[str] | None]:
+    """Shared pipeline: normalize → validate → build params → call API → parse.
 
-    params = build_params(filters)
-    print(f"[DEBUG] {API_BASE_URL}/auctions/search?{urlencode(params)}")
-
-    platform = filters.get("platform", "pc")
-    crossplay_val = "false" if filters.get("crossplay") == "false" else "true"
-
-    try:
-        raw = search_auctions_raw(params, platform, crossplay_val)
-    except Exception as e:
-        return None, [f"Request failed: {e}"]
-
-    return [Auction.from_api(a) for a in raw], None
-
-
-def search_auctions(filters):
-    # Main entry point: normalize → validate → build params → call API → parse results.
-    # Returns (result_dict, None) on success or (None, error_list) on failure.
+    Returns (auctions, None) on success or (None, errors) on failure.
+    """
     filters = normalize_filters(filters)
     errors = validate_filters(filters)
     if errors:
@@ -196,9 +170,26 @@ def search_auctions(filters):
     except Exception as e:
         return None, [f"Request failed: {e}"]
 
-    auctions = [Auction.from_api(a) for a in raw]
-    stats = compute_stats(auctions)
+    return [Auction.from_api(a) for a in raw], None
 
+
+def fetch_weapon_auctions(weapon_url_name, platform="pc", crossplay="true", sort_by="price_desc"):
+    """Fetch all auctions for a weapon. No stat filters applied."""
+    return _execute_search({
+        "weapon_url_name": weapon_url_name,
+        "sort_by": sort_by,
+        "platform": platform,
+        "crossplay": crossplay,
+    })
+
+
+def search_auctions(filters):
+    """Main entry point: search + compute stats + format for frontend."""
+    auctions, errors = _execute_search(filters)
+    if errors:
+        return None, errors
+
+    stats = compute_stats(auctions)
     return {
         "auctions": [a.to_frontend_dict() for a in auctions],
         "stats": stats.to_dict(),

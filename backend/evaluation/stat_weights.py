@@ -46,7 +46,7 @@ def compute_stat_weights(
     # Gather every positive stat that appears in any auction
     all_stats: set[str] = set()
     for a in auctions:
-        for attr in a.positive_attributes():
+        for attr in a.positive_attributes:
             all_stats.add(attr.url_name)
 
     if not all_stats:
@@ -63,7 +63,7 @@ def compute_stat_weights(
     # Count stat frequency in the top slice
     freq: dict[str, int] = {}
     for a in top_auctions:
-        for attr in a.positive_attributes():
+        for attr in a.positive_attributes:
             freq[attr.url_name] = freq.get(attr.url_name, 0) + 1
 
     total = sum(freq.values())

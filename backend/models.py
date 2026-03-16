@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from functools import cached_property
 from config import AUCTION_BASE_URL
 
 
@@ -65,9 +66,11 @@ class Auction:
             url=AUCTION_BASE_URL + auction_id,
         )
 
+    @cached_property
     def positive_attributes(self) -> list[RivenAttribute]:
         return [a for a in self.attributes if a.positive]
 
+    @cached_property
     def negative_attributes(self) -> list[RivenAttribute]:
         return [a for a in self.attributes if not a.positive]
 
@@ -86,8 +89,8 @@ class Auction:
             "polarity": self.polarity,
             "listed": _format_age(self.created),
             "lastUpdated": _format_date(self.updated),
-            "positiveAttributes": [a.to_display() for a in self.positive_attributes()],
-            "negativeAttributes": [a.to_display() for a in self.negative_attributes()],
+            "positiveAttributes": [a.to_display() for a in self.positive_attributes],
+            "negativeAttributes": [a.to_display() for a in self.negative_attributes],
             "url": self.url,
         }
 

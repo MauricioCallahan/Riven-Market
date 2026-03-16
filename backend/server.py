@@ -1,9 +1,3 @@
-import sys
-import os
-
-# Ensure rivens.py and config.py are importable when running from any working directory
-sys.path.insert(0, os.path.dirname(__file__))
-
 from flask import Flask, jsonify, request
 import rivens as rv
 import cache
@@ -186,6 +180,3 @@ def estimate():
     })
 
 
-if __name__ == "__main__":
-    # Run on port 5000 — Vite dev server proxies /api here
-    app.run(port=5000, debug=True)
