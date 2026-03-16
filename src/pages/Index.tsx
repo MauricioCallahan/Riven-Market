@@ -344,7 +344,7 @@ export default function Index() {
                       </span>
                     ))}
                     {listing.negative && (
-                      <span className="text-[10px] font-mono bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded-sm">
+                      <span className="text-[10px] font-mono bg-negative-stat/10 text-negative-stat px-1.5 py-0.5 rounded-sm">
                         {listing.negative.value} {listing.negative.label}
                       </span>
                     )}

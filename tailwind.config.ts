@@ -27,6 +27,11 @@ export default {
           DEFAULT: "hsl(var(--surface))",
           elevated: "hsl(var(--surface-elevated))",
         },
+        trend: {
+          up: "hsl(var(--trend-up))",
+          down: "hsl(var(--trend-down))",
+        },
+        "negative-stat": "hsl(var(--negative-stat))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",

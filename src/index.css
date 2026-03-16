@@ -36,6 +36,10 @@
 
     --radius: 0.5rem;
 
+    --trend-up: 142 70% 45%;
+    --trend-down: 0 70% 50%;
+    --negative-stat: 0 70% 50%;
+
     --surface: 0 0% 7%;
     --surface-elevated: 0 0% 10%;
     --glow-purple: 263 70% 50%;
