@@ -98,7 +98,7 @@ function FilterInput({ label, defaultValue, ghost }: { label: string; defaultVal
       <label className="text-label text-muted-foreground">{label}</label>
       <div className="relative">
         {ghost && !value && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-mono text-primary/25 pointer-events-none select-none">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-mono text-primary/35 pointer-events-none select-none">
             {ghost}
           </span>
         )}
@@ -228,10 +228,10 @@ export default function Index() {
           <FilterSelect label="WEAPON" options={["Select weapon...", ...WEAPONS]} />
           <FilterSelect label="POSITIVE ATTRIBUTES (MAX 3)" options={POSITIVE_ATTRS} />
           <FilterSelect label="NEGATIVE ATTRIBUTE (MAX 1)" options={NEGATIVE_ATTRS} />
-          <FilterInput label="MASTERY RANK MIN" ghost="avg: 8" />
-          <FilterInput label="MASTERY RANK MAX" ghost="avg: 16" />
-          <FilterInput label="MIN REROLLS" ghost="avg: 5" />
-          <FilterInput label="MAX REROLLS" ghost="avg: 40" />
+          <FilterInput label="MASTERY RANK MIN" ghost="8" />
+          <FilterInput label="MASTERY RANK MAX" ghost="16" />
+          <FilterInput label="MIN REROLLS" ghost="5" />
+          <FilterInput label="MAX REROLLS" ghost="40" />
           <FilterSelect label="MOD RANK" options={MOD_RANKS} defaultValue="All" />
           <FilterSelect label="SORT BY" options={SORT_OPTIONS} defaultValue="Price (Low → High)" />
           <FilterSelect label="BUYOUT POLICY" options={BUYOUT_POLICIES} defaultValue="All" />
