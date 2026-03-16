@@ -32,6 +32,11 @@ export default {
           down: "hsl(var(--trend-down))",
         },
         "negative-stat": "hsl(var(--negative-stat))",
+        "table-header": "hsl(var(--table-header))",
+        "row-hover": "hsl(var(--row-hover))",
+        "row-selected": "hsl(var(--row-selected))",
+        "stat-positive": "hsl(var(--stat-positive))",
+        "stat-negative": "hsl(var(--stat-negative))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",

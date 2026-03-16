@@ -1,73 +1,76 @@
-# Welcome to your Lovable project
+**An application focused on analyzing the trading value of Riven Mods using data from Warframe Market, a fan-run Warframe trading platform. The project evaluates Riven parameters to estimate market value and compare the cost-effectiveness of purchasing unveiled Rivens versus gambling on veiled Rivens, including high-value “god rolls.”**
 
-## Project info
+---
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+### Terminology 
+*(Warframe is not as mainstream as games like Fortnite, so some terms may be unfamiliar.)*
 
-## How can I edit this code?
+### 1. Riven Mod
 
-There are several ways of editing your application.
+A **Riven Mod** is a special type of weapon modification in *Warframe* that becomes unique to a single weapon once revealed.
+Each Riven can roll a combination of **positive and negative stats**, such as increased critical damage or reduced zoom.
 
-**Use Lovable**
+Riven Mods originate as **veiled Rivens** and must have their challenge completed before the weapon it applies to is revealed.
+Before unveiling, the exact weapon is unknown, **only the weapon class is shown.**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
 
-Changes made via Lovable will be committed automatically to this repo.
+**Riven classes include:**
 
-**Use your preferred IDE**
+- Rifle
+- Shotgun
+- Pistol
+- Melee
+- Archgun
+- Kitgun
+- Zaw
+- Companion Weapon
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 2. Riven Mod (Unveiled)
 
-Follow these steps:
+An **unveiled Riven Mod** is a Riven that has had it's challenge completed and is now bound to a specific weapon (e.g., Torid Riven Mod).
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Once unveiled:
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+The weapon is permanently revealed
 
-# Step 3: Install the necessary dependencies.
-npm i
+The Riven’s stats can be rerolled using **Kuva**
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+**Kuva** is an in-game resource used to reroll a Riven Mod's randomized attributes
+
+The Riven can be traded (subject to Mastery Rank requirements)
+
+| Veiled Riven Mod| Unveiled Riven Mod |
+|-----------------|--------------------|
+| ![Veiled Riven Mod](images/riven_veiled.png) | ![Unveiled Riven Mod](images/riven_unveiled.png) |
+
+*Images © Digital Extremes Ltd. Used for educational and illustrative purposes.*
+
+---
+
+### Instructions
+
+#### Prerequisites
+- **Python 3.14** — [python.org](https://www.python.org/downloads/)
+- **Node.js** (v18+) — [nodejs.org](https://nodejs.org/)
+
+#### 1. Start the Backend
+```bash
+cd backend
+pip install flask requests
+python main.py
+```
+The Flask API will start on `http://localhost:5000`.
+
+#### 2. Start the Frontend
+```bash
+cd frontend
+npm install
 npm run dev
 ```
+The Vite dev server will start on `http://localhost:8080` and proxy API requests to the backend.
 
-**Edit a file directly in GitHub**
+#### 3. Use the App
+Open `http://localhost:8080` in your browser, select your filters, and search for Riven auctions.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)

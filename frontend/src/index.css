@@ -46,6 +46,12 @@
     --glow-muted: 263 70% 50% / 0.1;
     --text-dim: 0 0% 40%;
 
+    --table-header: 0 0% 5%;
+    --row-hover: 263 70% 50% / 0.1;
+    --row-selected: 263 70% 50% / 0.2;
+    --stat-positive: 142 70% 45%;
+    --stat-negative: 0 70% 50%;
+
     --sidebar-background: 0 0% 3%;
     --sidebar-foreground: 0 0% 80%;
     --sidebar-primary: 263 70% 50%;
