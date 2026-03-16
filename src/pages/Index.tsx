@@ -91,15 +91,24 @@ function FilterSelect({ label, options, defaultValue }: { label: string; options
   );
 }
 
-function FilterInput({ label, defaultValue }: { label: string; defaultValue?: string }) {
+function FilterInput({ label, defaultValue, ghost }: { label: string; defaultValue?: string; ghost?: string }) {
+  const [value, setValue] = useState(defaultValue || "");
   return (
     <div className="space-y-1.5">
       <label className="text-label text-muted-foreground">{label}</label>
-      <input
-        type="text"
-        defaultValue={defaultValue}
-        className="w-full bg-surface border border-border rounded-sm px-3 py-2 text-[13px] text-foreground font-mono focus:outline-none focus:border-primary/50 transition-all"
-      />
+      <div className="relative">
+        {ghost && !value && (
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-mono text-primary/25 pointer-events-none select-none">
+            {ghost}
+          </span>
+        )}
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="w-full bg-surface border border-border rounded-sm px-3 py-2 text-[13px] text-foreground font-mono focus:outline-none focus:border-primary/50 transition-all relative z-10 bg-transparent"
+        />
+      </div>
     </div>
   );
 }
@@ -192,18 +201,7 @@ export default function Index() {
             ))}
           </div>
 
-          {/* Right side */}
-          <div className="ml-auto flex items-center gap-4">
-            {PLATFORMS.map((p) => (
-              <button
-                key={p}
-                onClick={() => setActivePlatform(p)}
-                className="cursor-pointer"
-              >
-                <StatusDot active={p === activePlatform} label={p} />
-              </button>
-            ))}
-          </div>
+          <div className="ml-auto" />
         </div>
       </nav>
 
@@ -230,10 +228,10 @@ export default function Index() {
           <FilterSelect label="WEAPON" options={["Select weapon...", ...WEAPONS]} />
           <FilterSelect label="POSITIVE ATTRIBUTES (MAX 3)" options={POSITIVE_ATTRS} />
           <FilterSelect label="NEGATIVE ATTRIBUTE (MAX 1)" options={NEGATIVE_ATTRS} />
-          <FilterInput label="MASTERY RANK MIN" defaultValue="0" />
-          <FilterInput label="MASTERY RANK MAX" defaultValue="16" />
-          <FilterInput label="MIN REROLLS" defaultValue="0" />
-          <FilterInput label="MAX REROLLS" defaultValue="∞" />
+          <FilterInput label="MASTERY RANK MIN" ghost="avg: 8" />
+          <FilterInput label="MASTERY RANK MAX" ghost="avg: 16" />
+          <FilterInput label="MIN REROLLS" ghost="avg: 5" />
+          <FilterInput label="MAX REROLLS" ghost="avg: 40" />
           <FilterSelect label="MOD RANK" options={MOD_RANKS} defaultValue="All" />
           <FilterSelect label="SORT BY" options={SORT_OPTIONS} defaultValue="Price (Low → High)" />
           <FilterSelect label="BUYOUT POLICY" options={BUYOUT_POLICIES} defaultValue="All" />
