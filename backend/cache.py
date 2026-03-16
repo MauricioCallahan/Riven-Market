@@ -201,6 +201,13 @@ def _set_attributes(data):
     _positive_attr_names = None  # invalidate derived caches
     _negative_attr_names = None
 
+    # Validate that our hardcoded base stats cover all API attributes
+    from evaluation.riven_math import validate_base_stats
+    url_names = {a["url_name"] for a in data if not a.get("search_only", False)}
+    warnings = validate_base_stats(url_names)
+    for w in warnings:
+        print(f"[cache] WARNING: {w}")
+
 
 def _set_dispositions(data):
     global _disposition_map, _merged_weapons
