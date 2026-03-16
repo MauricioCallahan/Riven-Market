@@ -122,7 +122,7 @@ function MarketStat({ label, value, trend }: { label: string; value: string; tre
       <div className="flex items-baseline gap-2">
         <span className="text-xl font-mono font-semibold text-foreground">{value}</span>
         {trend && (
-          <span className={`text-[11px] font-mono ${trend === "up" ? "text-green-400" : "text-red-400"}`}>
+          <span className={`text-[11px] font-mono ${trend === "up" ? "text-trend-up" : "text-trend-down"}`}>
             {trend === "up" ? "▲ 4.2%" : "▼ 1.8%"}
           </span>
         )}
