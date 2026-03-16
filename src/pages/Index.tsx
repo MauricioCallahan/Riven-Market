@@ -98,7 +98,7 @@ function FilterInput({ label, defaultValue, ghost }: { label: string; defaultVal
       <label className="text-label text-muted-foreground">{label}</label>
       <div className="relative">
         {ghost && !value && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-mono text-primary/25 pointer-events-none select-none">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-mono text-primary/35 pointer-events-none select-none">
             {ghost}
           </span>
         )}
