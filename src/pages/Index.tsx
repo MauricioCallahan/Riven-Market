@@ -228,10 +228,10 @@ export default function Index() {
           <FilterSelect label="WEAPON" options={["Select weapon...", ...WEAPONS]} />
           <FilterSelect label="POSITIVE ATTRIBUTES (MAX 3)" options={POSITIVE_ATTRS} />
           <FilterSelect label="NEGATIVE ATTRIBUTE (MAX 1)" options={NEGATIVE_ATTRS} />
-          <FilterInput label="MASTERY RANK MIN" defaultValue="0" />
-          <FilterInput label="MASTERY RANK MAX" defaultValue="16" />
-          <FilterInput label="MIN REROLLS" defaultValue="0" />
-          <FilterInput label="MAX REROLLS" defaultValue="∞" />
+          <FilterInput label="MASTERY RANK MIN" ghost="avg: 8" />
+          <FilterInput label="MASTERY RANK MAX" ghost="avg: 16" />
+          <FilterInput label="MIN REROLLS" ghost="avg: 5" />
+          <FilterInput label="MAX REROLLS" ghost="avg: 40" />
           <FilterSelect label="MOD RANK" options={MOD_RANKS} defaultValue="All" />
           <FilterSelect label="SORT BY" options={SORT_OPTIONS} defaultValue="Price (Low → High)" />
           <FilterSelect label="BUYOUT POLICY" options={BUYOUT_POLICIES} defaultValue="All" />
