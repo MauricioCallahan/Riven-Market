@@ -91,15 +91,24 @@ function FilterSelect({ label, options, defaultValue }: { label: string; options
   );
 }
 
-function FilterInput({ label, defaultValue }: { label: string; defaultValue?: string }) {
+function FilterInput({ label, defaultValue, ghost }: { label: string; defaultValue?: string; ghost?: string }) {
+  const [value, setValue] = useState(defaultValue || "");
   return (
     <div className="space-y-1.5">
       <label className="text-label text-muted-foreground">{label}</label>
-      <input
-        type="text"
-        defaultValue={defaultValue}
-        className="w-full bg-surface border border-border rounded-sm px-3 py-2 text-[13px] text-foreground font-mono focus:outline-none focus:border-primary/50 transition-all"
-      />
+      <div className="relative">
+        {ghost && !value && (
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-mono text-primary/25 pointer-events-none select-none">
+            {ghost}
+          </span>
+        )}
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="w-full bg-surface border border-border rounded-sm px-3 py-2 text-[13px] text-foreground font-mono focus:outline-none focus:border-primary/50 transition-all relative z-10 bg-transparent"
+        />
+      </div>
     </div>
   );
 }
