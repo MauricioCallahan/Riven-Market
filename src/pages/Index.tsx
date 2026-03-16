@@ -220,7 +220,7 @@ export default function Index() {
           
           <div className="flex items-center gap-3">
             <label className="text-label text-muted-foreground">CROSSPLAY</label>
-            <button className="w-11 h-6 rounded-full bg-primary relative transition-colors ml-[50px]">
+            <button className="w-11 h-6 rounded-full bg-primary relative transition-colors ml-[25px]">
               <div className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-foreground transition-transform" />
             </button>
           </div>
