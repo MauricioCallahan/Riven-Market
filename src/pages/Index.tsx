@@ -218,9 +218,9 @@ export default function Index() {
 
           <FilterSelect label="PLATFORM" options={PLATFORMS} defaultValue="PC" />
           
-          <div className="space-y-1.5">
+          <div className="flex items-center gap-3">
             <label className="text-label text-muted-foreground">CROSSPLAY</label>
-            <button className="w-11 h-6 rounded-full bg-primary relative transition-colors">
+            <button className="w-11 h-6 rounded-full bg-primary relative transition-colors ml-[50px]">
               <div className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-foreground transition-transform" />
             </button>
           </div>
