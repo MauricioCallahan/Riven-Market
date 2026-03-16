@@ -192,18 +192,7 @@ export default function Index() {
             ))}
           </div>
 
-          {/* Right side */}
-          <div className="ml-auto flex items-center gap-4">
-            {PLATFORMS.map((p) => (
-              <button
-                key={p}
-                onClick={() => setActivePlatform(p)}
-                className="cursor-pointer"
-              >
-                <StatusDot active={p === activePlatform} label={p} />
-              </button>
-            ))}
-          </div>
+          <div className="ml-auto" />
         </div>
       </nav>
 
