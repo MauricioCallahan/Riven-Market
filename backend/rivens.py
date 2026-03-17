@@ -1,3 +1,4 @@
+import logging
 from urllib.parse import urlencode
 
 from config import API_BASE_URL, DROPDOWN_OPTIONS, VALID_PLATFORMS
@@ -5,6 +6,8 @@ from api_client import search_auctions_raw
 from models import Auction
 from evaluation.stats import compute_stats
 import cache
+
+logger = logging.getLogger(__name__)
 
 VALID_SORT_BY = set(DROPDOWN_OPTIONS["sort_by"])
 VALID_BUYOUT_POLICY = set(DROPDOWN_OPTIONS["buyout_policy"])
@@ -158,7 +161,7 @@ def _execute_search(filters: dict) -> tuple[list[Auction] | None, list[str] | No
         return None, errors
 
     params = build_params(filters)
-    print(f"[DEBUG] {API_BASE_URL}/auctions/search?{urlencode(params)}")
+    logger.debug("Search params: %s", params)
 
     platform = filters.get("platform", "pc")
     crossplay = "false" if filters.get("crossplay") == "false" else "true"
@@ -166,7 +169,8 @@ def _execute_search(filters: dict) -> tuple[list[Auction] | None, list[str] | No
     try:
         raw = search_auctions_raw(params, platform, crossplay)
     except Exception as e:
-        return None, [f"Request failed: {e}"]
+        logger.error("Upstream API request failed: %s", e, exc_info=True)
+        return None, ["Request failed. Please try again later."]
 
     return [Auction.from_api(a) for a in raw], None
 

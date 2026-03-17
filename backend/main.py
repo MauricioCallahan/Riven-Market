@@ -1,9 +1,12 @@
 import os
+import logging
 from server import app
 import cache
 
 
 def main():
+    log_level = os.environ.get("LOG_LEVEL", "WARNING").upper()
+    logging.basicConfig(level=log_level, format="%(levelname)s %(name)s: %(message)s")
     # Load cached weapon/attribute data from disk (refreshes from API if stale).
     cache.init_cache()
     # Starts the Flask API server on port 5000.
