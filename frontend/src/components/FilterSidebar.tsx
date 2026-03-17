@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Search, X, ChevronDown, Check } from "lucide-react";
+import { Search, X, ChevronDown, Check, Calculator } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -21,9 +21,9 @@ import {
 export interface Weapon {
   url_name: string;
   item_name: string;
-  group: string;         // display grouping: primary, secondary, melee, etc.
-  riven_type: string;    // for attribute filtering: rifle, pistol, melee, etc.
-  disposition: number;   // riven disposition 1-5 (from warframestat.us, default 3)
+  group: string; // display grouping: primary, secondary, melee, etc.
+  riven_type: string; // for attribute filtering: rifle, pistol, melee, etc.
+  disposition: number; // riven disposition 1-5 (from warframestat.us, default 3)
 }
 
 export interface RivenAttribute {
@@ -33,14 +33,14 @@ export interface RivenAttribute {
   negative_only: boolean;
   search_only: boolean;
   group: string;
-  exclusive_to: string[] | null;  // list of riven_types this attr applies to, or null = all
+  exclusive_to: string[] | null; // list of riven_types this attr applies to, or null = all
 }
 
 export interface FilterValues {
-  weaponName: string;       // url_name of selected weapon
-  weaponRivenType: string;  // riven_type of selected weapon (for attribute filtering)
-  positiveAttributes: string[];  // url_names, max 3
-  negativeAttributes: string;    // url_name, max 1
+  weaponName: string; // url_name of selected weapon
+  weaponRivenType: string; // riven_type of selected weapon (for attribute filtering)
+  positiveAttributes: string[]; // url_names, max 3
+  negativeAttributes: string; // url_name, max 1
   mrMin: string;
   mrMax: string;
   minRerolls: string;
@@ -61,11 +61,19 @@ interface FilterSidebarProps {
   weapons: Weapon[];
   positiveAttrs: RivenAttribute[];
   negativeAttrs: RivenAttribute[];
+  onEstimate: () => void;
+  canEstimate: boolean;
 }
 
 // --- Shared styles ---
 
-function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
+function FilterField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-1">
       <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -127,7 +135,10 @@ function WeaponCombobox({
           <CommandList>
             <CommandEmpty>No weapon found.</CommandEmpty>
             {grouped.map(([group, items]) => (
-              <CommandGroup key={group} heading={group.charAt(0).toUpperCase() + group.slice(1)}>
+              <CommandGroup
+                key={group}
+                heading={group.charAt(0).toUpperCase() + group.slice(1)}
+              >
                 {items.map((w) => (
                   <CommandItem
                     key={w.url_name}
@@ -174,7 +185,7 @@ function AttributeCombobox({
 
   const available = useMemo(
     () => attrs.filter((a) => !excluded.has(a.url_name)),
-    [attrs, excluded.size]
+    [attrs, excluded.size],
   );
 
   return (
@@ -251,7 +262,7 @@ function AttributeMultiSelect({
 
   const available = useMemo(
     () => attrs.filter((a) => !excluded.has(a.url_name)),
-    [attrs, excluded.size]
+    [attrs, excluded.size],
   );
 
   const selectedAttrs = values
@@ -339,7 +350,13 @@ function SelectChevron() {
   return (
     <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-        <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path
+          d="M3 4.5L6 7.5L9 4.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     </div>
   );
@@ -355,9 +372,13 @@ export default function FilterSidebar({
   weapons,
   positiveAttrs,
   negativeAttrs,
+  onEstimate,
+  canEstimate,
 }: FilterSidebarProps) {
-  const set = (key: keyof FilterValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    onChange({ ...filters, [key]: e.target.value });
+  const set =
+    (key: keyof FilterValues) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      onChange({ ...filters, [key]: e.target.value });
 
   const handleWeaponSelect = (urlName: string, rivenType: string) => {
     // When weapon changes, clear attributes since available stats differ by riven_type
@@ -373,16 +394,33 @@ export default function FilterSidebar({
   return (
     <aside
       className="w-[260px] min-w-[260px] h-screen flex flex-col bg-card border-r border-border"
-      style={{ boxShadow: "0 0 0 1px rgba(0,0,0,.05), 0 1px 3px 0 rgba(0,0,0,.03)" }}
+      style={{
+        boxShadow: "0 0 0 1px rgba(0,0,0,.05), 0 1px 3px 0 rgba(0,0,0,.03)",
+      }}
     >
-      <div className="p-4 border-b border-border">
-        <h2 className="text-lg font-medium tracking-tight text-foreground">Filters</h2>
+      <div className="p-4 border-b border-border flex items-center justify-between">
+        <h2 className="text-lg font-medium tracking-tight text-foreground">
+          Filters
+        </h2>
+        <button
+          type="button"
+          onClick={onEstimate}
+          disabled={!canEstimate}
+          className="h-7 px-2.5 rounded-md border border-input bg-background text-xs font-medium text-foreground inline-flex items-center gap-1.5 transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:pointer-events-none"
+        >
+          <Calculator size={14} />
+          Estimate
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
         <FilterField label="Platform">
           <div className="relative">
-            <select className={selectClass} value={filters.platform} onChange={set("platform")}>
+            <select
+              className={selectClass}
+              value={filters.platform}
+              onChange={set("platform")}
+            >
               <option value="pc">PC</option>
               <option value="ps4">PlayStation</option>
               <option value="xbox">Xbox</option>
@@ -416,9 +454,13 @@ export default function FilterSidebar({
           <AttributeMultiSelect
             attrs={positiveAttrs}
             values={filters.positiveAttributes}
-            onChange={(vals) => onChange({ ...filters, positiveAttributes: vals })}
+            onChange={(vals) =>
+              onChange({ ...filters, positiveAttributes: vals })
+            }
             max={3}
-            excludeValues={filters.negativeAttributes ? [filters.negativeAttributes] : []}
+            excludeValues={
+              filters.negativeAttributes ? [filters.negativeAttributes] : []
+            }
           />
         </FilterField>
 
@@ -426,31 +468,68 @@ export default function FilterSidebar({
           <AttributeCombobox
             attrs={negativeAttrs}
             value={filters.negativeAttributes}
-            onSelect={(val) => onChange({ ...filters, negativeAttributes: val })}
+            onSelect={(val) =>
+              onChange({ ...filters, negativeAttributes: val })
+            }
             placeholder="Select attribute..."
             excludeValues={filters.positiveAttributes}
           />
         </FilterField>
 
         <FilterField label="Mastery Rank Min">
-          <input className={inputClass} type="number" min={1} max={16} placeholder="0" value={filters.mrMin} onChange={set("mrMin")} />
+          <input
+            className={inputClass}
+            type="number"
+            min={1}
+            max={16}
+            placeholder="0"
+            value={filters.mrMin}
+            onChange={set("mrMin")}
+          />
         </FilterField>
 
         <FilterField label="Mastery Rank Max">
-          <input className={inputClass} type="number" min={1} max={16} placeholder="16" value={filters.mrMax} onChange={set("mrMax")} />
+          <input
+            className={inputClass}
+            type="number"
+            min={1}
+            max={16}
+            placeholder="16"
+            value={filters.mrMax}
+            onChange={set("mrMax")}
+          />
         </FilterField>
 
         <FilterField label="Min Rerolls">
-          <input className={inputClass} type="number" min={0} placeholder="0" value={filters.minRerolls} onChange={set("minRerolls")} />
+          <input
+            className={inputClass}
+            type="number"
+            min={0}
+            placeholder="0"
+            value={filters.minRerolls}
+            onChange={set("minRerolls")}
+          />
         </FilterField>
 
         <FilterField label="Max Rerolls">
-          <input className={inputClass} type="number" min={0} max={1000} placeholder="∞" value={filters.maxRerolls} onChange={set("maxRerolls")} />
+          <input
+            className={inputClass}
+            type="number"
+            min={0}
+            max={1000}
+            placeholder="∞"
+            value={filters.maxRerolls}
+            onChange={set("maxRerolls")}
+          />
         </FilterField>
 
         <FilterField label="Mod Rank">
           <div className="relative">
-            <select className={selectClass} value={filters.modRank} onChange={set("modRank")}>
+            <select
+              className={selectClass}
+              value={filters.modRank}
+              onChange={set("modRank")}
+            >
               <option value="">All</option>
               <option value="maxed">Maxed</option>
             </select>
@@ -460,7 +539,11 @@ export default function FilterSidebar({
 
         <FilterField label="Sort By">
           <div className="relative">
-            <select className={selectClass} value={filters.sortBy} onChange={set("sortBy")}>
+            <select
+              className={selectClass}
+              value={filters.sortBy}
+              onChange={set("sortBy")}
+            >
               <option value="price_asc">Price (Low → High)</option>
               <option value="price_desc">Price (High → Low)</option>
               <option value="positive_attr_asc">Positive Attr (Asc)</option>
@@ -472,7 +555,11 @@ export default function FilterSidebar({
 
         <FilterField label="Buyout Policy">
           <div className="relative">
-            <select className={selectClass} value={filters.buyoutPolicy} onChange={set("buyoutPolicy")}>
+            <select
+              className={selectClass}
+              value={filters.buyoutPolicy}
+              onChange={set("buyoutPolicy")}
+            >
               <option value="">All</option>
               <option value="direct">Direct Buy</option>
               <option value="with_bid">With Bidding</option>
@@ -483,7 +570,11 @@ export default function FilterSidebar({
 
         <FilterField label="Polarity">
           <div className="relative">
-            <select className={selectClass} value={filters.polarity} onChange={set("polarity")}>
+            <select
+              className={selectClass}
+              value={filters.polarity}
+              onChange={set("polarity")}
+            >
               <option value="any">Any</option>
               <option value="madurai">Madurai</option>
               <option value="vazarin">Vazarin</option>

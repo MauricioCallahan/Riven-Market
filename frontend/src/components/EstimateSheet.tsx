@@ -1,0 +1,300 @@
+import { ExternalLink } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { EstimateResponse, ComparableAuction } from "@/types/estimate";
+import type { FieldStats, PriceStats } from "@/components/RivenTable";
+
+interface EstimateSheetProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  result: EstimateResponse | null;
+  status: "idle" | "loading" | "success" | "error";
+  error: string;
+  rivenName: string;
+  weaponName: string;
+}
+
+const confidenceColor: Record<string, string> = {
+  high: "bg-green-500/15 text-green-400 border-green-500/30",
+  medium: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+  low: "bg-red-500/15 text-red-400 border-red-500/30",
+};
+
+function formatPrice(n: number) {
+  return "~" + Math.round(n).toLocaleString() + "p";
+}
+
+function formatNum(n: number | null) {
+  if (n == null) return "\u2014";
+  return n.toLocaleString() + "p";
+}
+
+function StatItem({
+  label,
+  field,
+}: {
+  label: string;
+  field: FieldStats | null;
+}) {
+  if (!field) return null;
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+        {label}
+      </span>
+      <span className="text-xs">
+        {formatNum(field.min)} /{" "}
+        <span className="font-medium">{formatNum(field.median)}</span> /{" "}
+        {formatNum(field.max)}
+      </span>
+    </div>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="flex flex-col gap-6 pt-2">
+      <div className="flex flex-col items-center gap-3">
+        <Skeleton className="h-10 w-32" />
+        <div className="flex gap-2">
+          <Skeleton className="h-5 w-16 rounded-full" />
+          <Skeleton className="h-5 w-16 rounded-full" />
+        </div>
+        <Skeleton className="h-4 w-48" />
+      </div>
+      <Skeleton className="h-20 w-full" />
+      <Skeleton className="h-40 w-full" />
+    </div>
+  );
+}
+
+export default function EstimateSheet({
+  open,
+  onOpenChange,
+  result,
+  status,
+  error,
+  rivenName,
+  weaponName,
+}: EstimateSheetProps) {
+  const estimate = result?.estimate;
+  const stats = result?.stats;
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="sm:max-w-2xl overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>Price Estimate</SheetTitle>
+          <SheetDescription>
+            {weaponName && rivenName
+              ? `${weaponName} \u2014 ${rivenName}`
+              : "Analyzing riven..."}
+          </SheetDescription>
+        </SheetHeader>
+
+        {status === "loading" && <LoadingSkeleton />}
+
+        {status === "error" && (
+          <div className="mt-6 rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+            {error || "Failed to get price estimate."}
+          </div>
+        )}
+
+        {status === "success" && estimate && (
+          <div className="flex flex-col gap-6 pt-2">
+            {/* Hero — headline price */}
+            <div className="flex flex-col items-center gap-2 py-4 rounded-lg border border-border bg-muted/30">
+              {estimate.estimatedPrice > 0 ? (
+                <span className="text-3xl font-bold tracking-tight">
+                  {formatPrice(estimate.estimatedPrice)}
+                </span>
+              ) : (
+                <span className="text-lg text-muted-foreground">
+                  No price estimate available
+                </span>
+              )}
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className={confidenceColor[estimate.confidence] ?? ""}
+                >
+                  {estimate.confidence} confidence
+                </Badge>
+                <Badge variant="secondary" className="capitalize">
+                  {estimate.archetype}
+                </Badge>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                Based on {estimate.comparableCount} comparable listing
+                {estimate.comparableCount !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            {/* Stat Weights */}
+            {Object.keys(estimate.statWeights).length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Stat Weights
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(estimate.statWeights)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([stat, weight]) => (
+                      <span
+                        key={stat}
+                        className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/50 px-2 py-0.5 text-xs"
+                      >
+                        <span className="text-foreground">
+                          {stat.replace(/_/g, " ")}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {(weight * 100).toFixed(0)}%
+                        </span>
+                      </span>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Market Stats */}
+            {stats && stats.count > 0 && (
+              <div className="flex flex-col gap-1.5">
+                <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Market Overview ({stats.count} auctions)
+                </h3>
+                <div className="flex items-center justify-around rounded-md border border-border bg-muted/30 py-2">
+                  <StatItem label="Buyout" field={stats.buyout} />
+                  <StatItem label="Start Bid" field={stats.startBid} />
+                  <StatItem label="Top Bid" field={stats.topBid} />
+                </div>
+                <span className="text-[10px] text-muted-foreground text-center">
+                  min / median / max
+                </span>
+              </div>
+            )}
+
+            {/* Comparables Table */}
+            <div className="flex flex-col gap-1.5">
+              <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Comparable Listings
+              </h3>
+              {estimate.comparables.length === 0 ? (
+                <div className="rounded-md border border-border bg-muted/30 p-4 text-center text-sm text-muted-foreground">
+                  Not enough comparable listings found.
+                </div>
+              ) : (
+                <div className="rounded-md border border-border overflow-auto max-h-[400px]">
+                  <table
+                    className="w-full text-xs border-collapse"
+                    style={{ fontFeatureSettings: "'tnum'" }}
+                  >
+                    <thead className="sticky top-0 bg-table-header z-10">
+                      <tr>
+                        <th className="py-1.5 px-2 text-left font-medium border-b border-border">
+                          Sim
+                        </th>
+                        <th className="py-1.5 px-2 text-left font-medium border-b border-border">
+                          Riven
+                        </th>
+                        <th className="py-1.5 px-2 text-right font-medium border-b border-border">
+                          Buyout
+                        </th>
+                        <th className="py-1.5 px-2 text-right font-medium border-b border-border">
+                          Bid
+                        </th>
+                        <th className="py-1.5 px-2 text-left font-medium border-b border-border">
+                          Attributes
+                        </th>
+                        <th className="py-1.5 px-2 text-center font-medium border-b border-border">
+                          Re
+                        </th>
+                        <th className="py-1.5 px-2 text-left font-medium border-b border-border">
+                          Listed
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {estimate.comparables.map(
+                        (c: ComparableAuction, i: number) => (
+                          <tr
+                            key={c.auctionId}
+                            className={`border-b border-border ${i % 2 === 0 ? "bg-card" : "bg-muted"}`}
+                          >
+                            <td className="py-1.5 px-2 whitespace-nowrap">
+                              {(c.similarity * 100).toFixed(1)}%
+                            </td>
+                            <td className="py-1.5 px-2 whitespace-nowrap">
+                              <a
+                                href={c.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 hover:underline hover:text-primary"
+                              >
+                                {c.rivenName}
+                                <ExternalLink
+                                  size={10}
+                                  className="opacity-50"
+                                />
+                              </a>
+                            </td>
+                            <td className="py-1.5 px-2 text-right whitespace-nowrap">
+                              {formatNum(c.buyout)}
+                            </td>
+                            <td className="py-1.5 px-2 text-right whitespace-nowrap">
+                              {formatNum(c.startBid)}
+                            </td>
+                            <td className="py-1.5 px-2">
+                              <span>
+                                {c.positiveAttributes.map((s, j) => (
+                                  <span key={j} className="text-stat-positive">
+                                    {s}
+                                    {j < c.positiveAttributes.length - 1
+                                      ? ", "
+                                      : ""}
+                                  </span>
+                                ))}
+                                {c.negativeAttributes.length > 0 && (
+                                  <>
+                                    {" "}
+                                    {c.negativeAttributes.map((s, j) => (
+                                      <span
+                                        key={j}
+                                        className="text-stat-negative"
+                                      >
+                                        {s}
+                                        {j < c.negativeAttributes.length - 1
+                                          ? ", "
+                                          : ""}
+                                      </span>
+                                    ))}
+                                  </>
+                                )}
+                              </span>
+                            </td>
+                            <td className="py-1.5 px-2 text-center whitespace-nowrap">
+                              {c.rerolls}
+                            </td>
+                            <td className="py-1.5 px-2 whitespace-nowrap text-muted-foreground">
+                              {c.listed}
+                            </td>
+                          </tr>
+                        ),
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
