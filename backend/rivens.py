@@ -60,6 +60,7 @@ def validate_filters(filters):
     # Returns a list of human-readable error strings — empty means valid.
     errors = []
 
+    mr_min = filters.get("mastery_rank_min")
     mr_max = filters.get("mastery_rank_max")
     rr_min = filters.get("re_rolls_min")
     rr_max = filters.get("re_rolls_max")
@@ -68,7 +69,24 @@ def validate_filters(filters):
     if not filters.get("weapon_url_name"):
         errors.append("Weapon name is required — the API does not support searching without a weapon.")
 
-    # --- Mastery rank max (min is not supported by the API) ---
+    # --- Input length bounds ---
+    weapon = filters.get("weapon_url_name")
+    if weapon and len(weapon) > 100:
+        errors.append("Weapon name must be 100 characters or fewer.")
+
+    pos_raw = filters.get("positive_attributes")
+    if pos_raw and len(pos_raw) > 500:
+        errors.append("Positive attributes string must be 500 characters or fewer.")
+
+    neg_raw = filters.get("negative_attributes")
+    if neg_raw and len(neg_raw) > 500:
+        errors.append("Negative attributes string must be 500 characters or fewer.")
+
+    # --- Mastery rank ---
+    if mr_min is not None:
+        if mr_min < 0 or mr_min > 16:
+            errors.append(f"Mastery rank minimum must be between 0 and 16 (got {mr_min}).")
+
     if mr_max is not None:
         if mr_max < 1 or mr_max > 16:
             errors.append(f"Mastery rank maximum must be between 1 and 16 (got {mr_max}).")
@@ -76,6 +94,8 @@ def validate_filters(filters):
     # --- Re-rolls ---
     if rr_min is not None and rr_min < 0:
         errors.append(f"Re-rolls minimum must be at least 0 (got {rr_min}).")
+    if rr_max is not None and rr_max < 0:
+        errors.append(f"Re-rolls maximum must be at least 0 (got {rr_max}).")
     if rr_min is not None and rr_max is not None and rr_min > rr_max:
         errors.append(f"Re-rolls minimum ({rr_min}) cannot exceed maximum ({rr_max}).")
 
@@ -112,6 +132,12 @@ def validate_filters(filters):
                 else:
                     errors.append(f'Negative attributes: "{attr}" is not a recognized attribute.')
 
+    # --- Mod rank ---
+    mod_rank = filters.get("mod_rank")
+    if mod_rank is not None:
+        if mod_rank < 0 or mod_rank > 8:
+            errors.append(f"Mod rank must be between 0 and 8 (got {mod_rank}).")
+
     # --- Platform ---
     platform = filters.get("platform")
     if platform is not None and platform not in VALID_PLATFORMS:
@@ -140,6 +166,7 @@ def build_params(filters):
         "mastery_rank_max": filters.get("mastery_rank_max"),
         "re_rolls_min": filters.get("re_rolls_min"),
         "re_rolls_max": filters.get("re_rolls_max"),
+        "mod_rank": filters.get("mod_rank"),
     }
 
     # Remove None values so they are not included in the API request

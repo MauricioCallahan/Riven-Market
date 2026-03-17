@@ -1,9 +1,40 @@
+import math
+
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 import rivens as rv
 import cache
 from evaluation import compute_stats, estimate_price
 
 app = Flask(__name__)
+CORS(app, origins=["http://localhost:8080"])  # Allow React frontend to access API
+
+
+@app.errorhandler(400)
+def bad_request(e):
+    return jsonify({"error": getattr(e, "description", "Bad request")}), 400
+
+
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({"error": "Endpoint not found"}), 404
+
+
+@app.errorhandler(405)
+def method_not_allowed(e):
+    return jsonify({"error": "Method not allowed"}), 405
+
+
+@app.errorhandler(500)
+def internal_error(e):
+    return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/health", methods=["GET"])
+def health():
+    status = cache.get_cache_status()
+    http_status = 200 if status["status"] == "ok" else 503
+    return jsonify(status), http_status
 
 
 def _int_or_none(value: str):
@@ -112,6 +143,8 @@ def _parse_attr_pairs(raw: str) -> list[dict] | None:
         try:
             value = float(val_str.strip())
         except ValueError:
+            return None
+        if not math.isfinite(value):
             return None
         if name:
             pairs.append({"url_name": name, "value": value})

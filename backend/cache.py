@@ -286,3 +286,23 @@ def get_negative_attribute_names() -> set[str]:
         return set()
     _negative_attr_names = {a["url_name"] for a in attrs if not a.get("positive_only", False) and not a.get("search_only", False)}
     return _negative_attr_names
+
+
+def get_cache_status() -> dict:
+    """Return load status of each in-memory cache. Used by /api/health."""
+    with _weapons_lock:
+        weapons_loaded = _weapons is not None
+    with _attributes_lock:
+        attrs_loaded = _attributes is not None
+    with _dispositions_lock:
+        dispos_loaded = _disposition_map is not None
+
+    all_loaded = weapons_loaded and attrs_loaded and dispos_loaded
+    return {
+        "status": "ok" if all_loaded else "degraded",
+        "cache": {
+            "weapons": weapons_loaded,
+            "attributes": attrs_loaded,
+            "dispositions": dispos_loaded,
+        },
+    }

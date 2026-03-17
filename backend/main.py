@@ -1,10 +1,12 @@
 import os
 import logging
+from dotenv import load_dotenv
 from server import app
 import cache
 
 
 def main():
+    load_dotenv()
     log_level = os.environ.get("LOG_LEVEL", "WARNING").upper()
     logging.basicConfig(level=log_level, format="%(levelname)s %(name)s: %(message)s")
     # Load cached weapon/attribute data from disk (refreshes from API if stale).
