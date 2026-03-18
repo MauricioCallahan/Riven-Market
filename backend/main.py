@@ -1,8 +1,8 @@
 import os
 import logging
 from dotenv import load_dotenv
-from server import app
-import cache
+from api.routes import app
+from services import cache_service as cache
 
 
 def main():

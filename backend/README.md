@@ -2,19 +2,22 @@
 
 Flask-based API server that proxies and enriches data from the Warframe Market API, with a custom similarity-based pricing engine for riven valuation.
 
-## Module Overview
+## Layered Architecture
 
 ```
 backend/
 ├── main.py              — Entry point: initializes cache, starts Flask on :5000
-├── server.py            — Route definitions, camelCase ↔ snake_case param mapping
-├── rivens.py            — Orchestration: normalize → validate → build params → API call → parse
-├── models.py            — Dataclasses: Auction, RivenAttribute, FieldStats, PriceStats
-├── api_client.py        — HTTP client for warframe.market (single responsibility)
-├── config.py            — Constants: URLs, headers, dropdown options, valid platforms
-├── cache.py             — File-based JSON cache with 24h TTL and background refresh
+├── api/
+│   └── routes.py        — Route definitions, camelCase ↔ snake_case param mapping
+├── services/
+│   ├── auction_service.py — Orchestration: normalize → validate → build params → API call → parse
+│   ├── cache_service.py   — File-based JSON cache with 24h TTL and background refresh
+│   └── warframe_client.py — HTTP client for warframe.market (single responsibility)
+├── core/
+│   ├── models.py        — Dataclasses: Auction, RivenAttribute, FieldStats, PriceStats
+│   └── config.py        — Constants: URLs, headers, dropdown options, valid platforms
 ├── .cache/              — Cached data (gitignored): weapons.json, attributes.json, dispositions.json
-└── evaluation/          — Pricing engine package
+└── evaluation/          — Pricing engine package (domain logic)
     ├── __init__.py      — Public exports: compute_stats, estimate_price, PriceEstimate
     ├── stats.py         — Basic market stats (min/max/mean/median)
     ├── riven_math.py    — Base stat tables (32 attributes), roll normalization
@@ -26,8 +29,8 @@ backend/
 
 ## Design Principles
 
-- **Separation of concerns** — `server.py` only maps params and returns JSON. `rivens.py` orchestrates. `api_client.py` handles HTTP. `models.py` handles parsing. `evaluation/` handles pricing.
-- **Config-driven** — Dropdown options, valid values, and API URLs live in `config.py`. Validation sets are derived from config, not hardcoded.
+- **Separation of concerns** — `api/routes.py` only maps params and returns JSON. `services/auction_service.py` orchestrates. `services/warframe_client.py` handles HTTP. `core/models.py` handles parsing. `evaluation/` handles pricing.
+- **Config-driven** — Dropdown options, valid values, and API URLs live in `core/config.py`. Validation sets are derived from config, not hardcoded.
 - **Graceful degradation** — If warframestat.us is down, weapons are still served with a neutral disposition (3). If the cache is stale, background threads refresh it without blocking requests.
 
 ## API Endpoints

@@ -14,9 +14,9 @@ import os
 import threading
 import requests
 from datetime import datetime, timezone, timedelta
-from config import API_HEADERS, API_BASE_URL, WARFRAMESTAT_WEAPONS_URL
-from api_client import _rate_limited_get
-CACHE_DIR = os.path.join(os.path.dirname(__file__), ".cache")
+from core.config import API_HEADERS, API_BASE_URL, WARFRAMESTAT_WEAPONS_URL
+from services.warframe_client import _rate_limited_get
+CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".cache")
 CACHE_TTL = timedelta(hours=24)
 
 # In-memory cache (populated from disk on startup, refreshed periodically)

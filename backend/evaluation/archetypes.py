@@ -6,7 +6,7 @@ positive attributes.  The similarity engine uses archetypes to ensure
 only comparable rivens are matched against each other.
 """
 
-from models import Auction
+from core.models import Auction
 
 
 # ---------------------------------------------------------------------------

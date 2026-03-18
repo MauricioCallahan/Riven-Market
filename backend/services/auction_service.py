@@ -1,11 +1,11 @@
 import logging
 from urllib.parse import urlencode
 
-from config import API_BASE_URL, DROPDOWN_OPTIONS, VALID_PLATFORMS
-from api_client import search_auctions_raw
-from models import Auction
+from core.config import API_BASE_URL, DROPDOWN_OPTIONS, VALID_PLATFORMS
+from services.warframe_client import search_auctions_raw
+from core.models import Auction
 from evaluation.stats import compute_stats
-import cache
+from services import cache_service as cache
 
 logger = logging.getLogger(__name__)
 
@@ -163,10 +163,11 @@ def build_params(filters):
         "sort_by": filters.get("sort_by") or "price_asc",
         "buyout_policy": filters.get("buyout_policy"),
         "polarity": filters.get("polarity"),
+        "mastery_rank_min": filters.get("mastery_rank_min"),
         "mastery_rank_max": filters.get("mastery_rank_max"),
         "re_rolls_min": filters.get("re_rolls_min"),
         "re_rolls_max": filters.get("re_rolls_max"),
-        "mod_rank": filters.get("mod_rank"),
+        "mod_rank": "maxed" if str(filters.get("mod_rank")) == "8" else filters.get("mod_rank"),
     }
 
     # Remove None values so they are not included in the API request

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from functools import cached_property
-from config import AUCTION_BASE_URL
+from core.config import AUCTION_BASE_URL
 
 
 @dataclass

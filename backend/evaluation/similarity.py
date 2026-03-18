@@ -6,7 +6,7 @@ similarity scores with adjustments for negative stats and reroll distance.
 """
 
 import math
-from models import Auction, RivenAttribute
+from core.models import Auction, RivenAttribute
 from evaluation.riven_math import normalize_roll
 
 

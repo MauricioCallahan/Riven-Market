@@ -1,5 +1,5 @@
 from statistics import mean, median
-from models import Auction, FieldStats, PriceStats
+from core.models import Auction, FieldStats, PriceStats
 
 
 def _field_stats(values: list[int | float]) -> FieldStats | None:

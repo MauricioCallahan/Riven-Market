@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from statistics import quantiles
 
-from models import Auction
+from core.models import Auction
 from evaluation.stat_weights import compute_stat_weights, get_effective_price
 from evaluation.archetypes import classify_attributes, classify_auction, is_compatible
 from evaluation.similarity import (

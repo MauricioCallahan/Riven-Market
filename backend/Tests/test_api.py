@@ -2,12 +2,11 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
 try:
-    from backend import rivens as rv
+    from backend.services import auction_service as rv
 except ImportError:
-    import rivens as rv
+    from services import auction_service as rv
 
-# Test cases covering every filter param the API actually accepts.
-# mastery_rank_min, mod_rank, and weapon-less searches are NOT supported by the API.
+# Test cases covering filter params the API accepts.
 TEST_CASES = [
     {
         "name": "Minimal — weapon only",

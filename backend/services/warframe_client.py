@@ -1,7 +1,7 @@
 import time
 import threading
 import requests
-from config import API_HEADERS, API_BASE_URL
+from core.config import API_HEADERS, API_BASE_URL
 
 # Shared rate-limit state — governs ALL warframe.market HTTP calls (cache + search)
 _rate_lock = threading.Lock()

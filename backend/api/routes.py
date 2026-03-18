@@ -2,8 +2,8 @@ import math
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import rivens as rv
-import cache
+from services import auction_service as rv
+from services import cache_service as cache
 from evaluation import compute_stats, estimate_price
 
 app = Flask(__name__)

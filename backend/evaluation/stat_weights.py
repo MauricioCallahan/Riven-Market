@@ -8,7 +8,7 @@ rivens are assumed to be more desirable, so they get higher weight.
 Falls back to equal weights when fewer than 15 auctions are available.
 """
 
-from models import Auction
+from core.models import Auction
 
 
 def get_effective_price(auction: Auction) -> float | None:

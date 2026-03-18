@@ -5,12 +5,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 
 try:
     # Try package-style import first
-    from backend.server import _int_or_none, _parse_attr_pairs
-    from backend.rivens import normalize_filters, validate_filters
+    from backend.api.routes import _int_or_none, _parse_attr_pairs
+    from backend.services.auction_service import normalize_filters, validate_filters
 except ImportError:
     # Fallback for direct execution (backend/ is now in sys.path)
-    from server import _int_or_none, _parse_attr_pairs
-    from rivens import normalize_filters, validate_filters
+    from api.routes import _int_or_none, _parse_attr_pairs
+    from services.auction_service import normalize_filters, validate_filters
 
 # ---------------------------------------------------------------------------
 # Helpers / Wrappers
