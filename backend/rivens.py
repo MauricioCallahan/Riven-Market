@@ -67,7 +67,7 @@ def validate_filters(filters):
 
     # --- Weapon is required — the API returns 400 without it ---
     if not filters.get("weapon_url_name"):
-        errors.append("Weapon name is required — the API does not support searching without a weapon.")
+        errors.append("Weapon name is required.")
 
     # --- Input length bounds ---
     weapon = filters.get("weapon_url_name")
@@ -75,12 +75,12 @@ def validate_filters(filters):
         errors.append("Weapon name must be 100 characters or fewer.")
 
     pos_raw = filters.get("positive_attributes")
-    if pos_raw and len(pos_raw) > 500:
-        errors.append("Positive attributes string must be 500 characters or fewer.")
+    if pos_raw and len(pos_raw) > 200:
+        errors.append("Positive attributes string must be 200 characters or fewer.")
 
     neg_raw = filters.get("negative_attributes")
-    if neg_raw and len(neg_raw) > 500:
-        errors.append("Negative attributes string must be 500 characters or fewer.")
+    if neg_raw and len(neg_raw) > 200:
+        errors.append("Negative attributes string must be 200 characters or fewer.")
 
     # --- Mastery rank ---
     if mr_min is not None:

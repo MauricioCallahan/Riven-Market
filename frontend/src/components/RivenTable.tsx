@@ -241,9 +241,15 @@ export default function RivenTable({
       {/* Stats Bar */}
       {stats && stats.count > 0 && (
         <div className="flex items-center gap-6 px-4 py-1.5 border-t border-border bg-muted/50 text-xs">
-          <span className="text-muted-foreground font-medium">
-            {stats.count} auctions
-          </span>
+          {stats.count === 500 ? (
+            <span className="text-amber-400 font-medium">
+              500+ auctions (results capped — narrow filters)
+            </span>
+          ) : (
+            <span className="text-muted-foreground font-medium">
+              {stats.count} auctions
+            </span>
+          )}
           <StatItem label="Buyout" field={stats.buyout} />
           <StatItem label="Start Bid" field={stats.startBid} />
           <StatItem label="Top Bid" field={stats.topBid} />
@@ -275,7 +281,9 @@ export default function RivenTable({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              Showing {rows.length} results.
+              {rows.length === 500
+                ? `Showing 500+ results — narrow filters for more precision.`
+                : `Showing ${rows.length} results.`}
             </motion.div>
           )}
           {status === "error" && (
