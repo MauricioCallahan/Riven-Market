@@ -163,7 +163,7 @@ def test_validate_filters_valid():
         "mastery_rank_max": 16,
         "re_rolls_min": 0,
         "re_rolls_max": 10,
-        "mod_rank": 8,
+        "mod_rank": "maxed",
         "platform": "pc",
         "polarity": "naramon",
         "buyout_policy": "direct",
@@ -174,9 +174,9 @@ def test_validate_filters_required():
     check_validate_filters({}, "Weapon name is required.")
 
 def test_validate_filters_bounds_mr():
-    # Min bounds
-    check_validate_filters({"weapon_url_name": "x", "mastery_rank_min": -1}, "Mastery rank minimum must be between 0 and 16")
-    check_validate_filters({"weapon_url_name": "x", "mastery_rank_min": 17}, "Mastery rank minimum must be between 0 and 16")
+    # Min bounds — floor is 8 (rivens require MR 8)
+    check_validate_filters({"weapon_url_name": "x", "mastery_rank_min": 7}, "Mastery rank minimum must be between 8 and 16")
+    check_validate_filters({"weapon_url_name": "x", "mastery_rank_min": 17}, "Mastery rank minimum must be between 8 and 16")
 
     # Max bounds
     check_validate_filters({"weapon_url_name": "x", "mastery_rank_max": 0}, "Mastery rank maximum must be between 1 and 16")
@@ -190,9 +190,12 @@ def test_validate_filters_bounds_rerolls():
     check_validate_filters({"weapon_url_name": "x", "re_rolls_min": 10, "re_rolls_max": 5}, "cannot exceed maximum")
 
 def test_validate_filters_bounds_mod_rank():
-    # 0 to 8
-    check_validate_filters({"weapon_url_name": "x", "mod_rank": -1}, "Mod rank must be between 0 and 8")
-    check_validate_filters({"weapon_url_name": "x", "mod_rank": 9}, "Mod rank must be between 0 and 8")
+    # Only "maxed" or None (empty) are valid — integers are rejected
+    check_validate_filters({"weapon_url_name": "x", "mod_rank": 8}, "Mod rank must be 'maxed' or empty")
+    check_validate_filters({"weapon_url_name": "x", "mod_rank": "invalid"}, "Mod rank must be 'maxed' or empty")
+    # Valid values produce no error
+    check_validate_filters({"weapon_url_name": "x", "mod_rank": "maxed"}, [])
+    check_validate_filters({"weapon_url_name": "x", "mod_rank": None}, [])
 
 def test_validate_filters_input_lengths():
     # Weapon > 100

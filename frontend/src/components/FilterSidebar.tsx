@@ -480,9 +480,9 @@ export default function FilterSidebar({
           <input
             className={inputClass}
             type="number"
-            min={1}
+            min={8}
             max={16}
-            placeholder="0"
+            placeholder="8"
             value={filters.mrMin}
             onChange={set("mrMin")}
           />

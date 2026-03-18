@@ -35,6 +35,7 @@ def normalize_filters(filters):
     # Normalizes attribute inputs: replaces spaces with underscores, strips whitespace around commas.
     # Call this before validate_filters().
     normalized = dict(filters)
+    # Defaults
     if normalized.get("re_rolls_min") is None:
         normalized["re_rolls_min"] = 0
     if normalized.get("polarity") == "any":
@@ -83,13 +84,12 @@ def validate_filters(filters):
         errors.append("Negative attributes string must be 200 characters or fewer.")
 
     # --- Mastery rank ---
-    if mr_min is not None:
-        if mr_min < 0 or mr_min > 16:
-            errors.append(f"Mastery rank minimum must be between 0 and 16 (got {mr_min}).")
-
-    if mr_max is not None:
-        if mr_max < 1 or mr_max > 16:
-            errors.append(f"Mastery rank maximum must be between 1 and 16 (got {mr_max}).")
+    if mr_min is not None and (mr_min < 8 or mr_min > 16):
+        errors.append(f"Mastery rank minimum must be between 8 and 16 (rivens require MR 8; got {mr_min}).")
+    if mr_max is not None and (mr_max < 1 or mr_max > 16):
+        errors.append(f"Mastery rank maximum must be between 1 and 16 (got {mr_max}).")
+    if mr_min is not None and mr_max is not None and mr_min > mr_max:
+        errors.append(f"Mastery rank minimum ({mr_min}) cannot exceed maximum ({mr_max}).")
 
     # --- Re-rolls ---
     if rr_min is not None and rr_min < 0:
@@ -134,9 +134,8 @@ def validate_filters(filters):
 
     # --- Mod rank ---
     mod_rank = filters.get("mod_rank")
-    if mod_rank is not None:
-        if mod_rank < 0 or mod_rank > 8:
-            errors.append(f"Mod rank must be between 0 and 8 (got {mod_rank}).")
+    if mod_rank is not None and mod_rank != "maxed":
+        errors.append(f"Mod rank must be 'maxed' or empty (got '{mod_rank}').")
 
     # --- Platform ---
     platform = filters.get("platform")
@@ -167,7 +166,7 @@ def build_params(filters):
         "mastery_rank_max": filters.get("mastery_rank_max"),
         "re_rolls_min": filters.get("re_rolls_min"),
         "re_rolls_max": filters.get("re_rolls_max"),
-        "mod_rank": "maxed" if str(filters.get("mod_rank")) == "8" else filters.get("mod_rank"),
+        "mod_rank": filters.get("mod_rank"),
     }
 
     # Remove None values so they are not included in the API request
