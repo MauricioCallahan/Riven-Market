@@ -1,16 +1,14 @@
 import sys
 import os
 
-# Ensure backend modules can be imported when running script directly
-if __name__ == "__main__":
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
 try:
     # Try package-style import first
     from backend.server import _int_or_none, _parse_attr_pairs
     from backend.rivens import normalize_filters, validate_filters
 except ImportError:
-    # Fallback for direct execution
+    # Fallback for direct execution (backend/ is now in sys.path)
     from server import _int_or_none, _parse_attr_pairs
     from rivens import normalize_filters, validate_filters
 
@@ -64,11 +62,11 @@ def test_int_or_none():
     check_int_or_none("123", 123)
     check_int_or_none("0", 0)
     check_int_or_none("-5", -5)
-    
+
     # Whitespace
     check_int_or_none(" 123 ", 123)
     check_int_or_none("\t999\n", 999)
-    
+
     # Invalid
     check_int_or_none("abc", None)
     check_int_or_none("12.5", None)
@@ -76,7 +74,7 @@ def test_int_or_none():
     check_int_or_none(None, None)
     check_int_or_none("inf", None)
     check_int_or_none("nan", None)
-    
+
     # Large Integers
     large = str(sys.maxsize + 1)
     check_int_or_none(large, int(large))
@@ -91,34 +89,34 @@ def test_parse_attr_pairs():
         {"url_name": "crit_chance", "value": 150.0},
         {"url_name": "multishot", "value": 90.5},
     ])
-    
+
     # Whitespace normalization
     check_parse_attr_pairs(" crit_chance : 150 ", [
         {"url_name": "crit_chance", "value": 150.0},
     ])
-    
+
     # Case normalization
     check_parse_attr_pairs("Crit Chance: 150", [
         {"url_name": "crit_chance", "value": 150.0},
     ])
-    
+
     # Trailing Comma (Empty segment)
     # Code: split(",") -> ["a:1", ""]. if ":" not in "" -> return None.
     # Current behavior assumption based on code reading: returns None on trailing comma.
     check_parse_attr_pairs("crit_chance:150,", None)
-    
+
     # Duplicate Keys
     check_parse_attr_pairs("crit:1,crit:2", [
         {"url_name": "crit", "value": 1.0},
         {"url_name": "crit", "value": 2.0},
     ])
-    
+
     # Invalid Formats
     check_parse_attr_pairs("crit_chance", None)       # Missing colon
     check_parse_attr_pairs("crit_chance:abc", None)   # Non-numeric
     check_parse_attr_pairs("", None)
     check_parse_attr_pairs(None, None)
-    
+
     # Security / Math Safety
     check_parse_attr_pairs("crit_chance:inf", None)
     check_parse_attr_pairs("crit_chance:nan", None)
@@ -134,12 +132,12 @@ def test_normalize_filters():
         "platform": "pc",
         "polarity": None
     })
-    
+
     # Polarity "any" removal
     check_normalize_filters({"weapon_url_name": "rubico", "polarity": "any"}, {
         "polarity": None
     })
-    
+
     # Attribute normalization
     check_normalize_filters({
         "weapon_url_name": "rubico",
@@ -147,7 +145,7 @@ def test_normalize_filters():
     }, {
         "positive_attributes": "critical_chance,multishot"
     })
-    
+
     # Weapon Name normalization
     check_normalize_filters({"weapon_url_name": "Rubico Prime"}, {
         "weapon_url_name": "rubico_prime"
@@ -179,7 +177,7 @@ def test_validate_filters_bounds_mr():
     # Min bounds
     check_validate_filters({"weapon_url_name": "x", "mastery_rank_min": -1}, "Mastery rank minimum must be between 0 and 16")
     check_validate_filters({"weapon_url_name": "x", "mastery_rank_min": 17}, "Mastery rank minimum must be between 0 and 16")
-    
+
     # Max bounds
     check_validate_filters({"weapon_url_name": "x", "mastery_rank_max": 0}, "Mastery rank maximum must be between 1 and 16")
     check_validate_filters({"weapon_url_name": "x", "mastery_rank_max": 17}, "Mastery rank maximum must be between 1 and 16")
@@ -187,7 +185,7 @@ def test_validate_filters_bounds_mr():
 def test_validate_filters_bounds_rerolls():
     check_validate_filters({"weapon_url_name": "x", "re_rolls_min": -1}, "Re-rolls minimum must be at least 0")
     check_validate_filters({"weapon_url_name": "x", "re_rolls_max": -1}, "Re-rolls maximum must be at least 0")
-    
+
     # Cross-field
     check_validate_filters({"weapon_url_name": "x", "re_rolls_min": 10, "re_rolls_max": 5}, "cannot exceed maximum")
 
@@ -200,7 +198,7 @@ def test_validate_filters_input_lengths():
     # Weapon > 100
     long_name = "a" * 101
     check_validate_filters({"weapon_url_name": long_name}, "Weapon name must be 100 characters or fewer")
-    
+
     # Attributes > 200
     long_attrs = "a" * 201
     check_validate_filters({"weapon_url_name": "x", "positive_attributes": long_attrs}, "Positive attributes string must be 200 characters or fewer")
@@ -209,13 +207,13 @@ def test_validate_filters_input_lengths():
 def test_validate_filters_enums():
     # Invalid Platform
     check_validate_filters({"weapon_url_name": "x", "platform": "xbox_360"}, 'Platform "xbox_360" is not valid')
-    
+
     # Invalid Polarity
     check_validate_filters({"weapon_url_name": "x", "polarity": "unknown"}, 'Polarity "unknown" is not valid')
-    
+
     # Invalid Buyout Policy
     check_validate_filters({"weapon_url_name": "x", "buyout_policy": "steal"}, 'Buyout policy "steal" is not valid')
-    
+
     # Invalid Sort
     check_validate_filters({"weapon_url_name": "x", "sort_by": "random"}, 'Sort option "random" is not valid')
 

@@ -37,10 +37,10 @@ const Index = () => {
   const [error, setError] = useState<string>("");
   const [stats, setStats] = useState<PriceStats | null>(null);
 
-  // Selection state (lifted from RivenTable)
+  // Selection state (lifted from RivenTable so EstimateSheet can access it)
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // Estimate state
+  // Estimate sheet state — tracks the open/close state, async status, and result payload
   const [estimateResult, setEstimateResult] = useState<EstimateResponse | null>(
     null,
   );
@@ -57,7 +57,8 @@ const Index = () => {
     [],
   );
 
-  // Fetch weapons and attributes on mount
+  // Fetch the full weapon list and attribute catalogue from the backend cache on
+  // initial mount. These lists are static for a given game patch and rarely change.
   useEffect(() => {
     fetch("/api/riven/weapons")
       .then((r) => (r.ok ? r.json() : Promise.reject("Failed to load weapons")))
@@ -77,7 +78,9 @@ const Index = () => {
       .catch((err) => console.error("[attributes]", err));
   }, []);
 
-  // Filter attributes by selected weapon's riven_type using exclusive_to
+  // Filter the global attribute list down to stats valid for the selected weapon's
+  // riven_type. Attributes with exclusive_to === null are universal (apply to all
+  // weapon types). Re-computes only when the weapon type or attribute list changes.
   const filteredPositiveAttrs = useMemo(() => {
     if (!filters.weaponRivenType) return allPositiveAttrs;
     return allPositiveAttrs.filter(
@@ -96,15 +99,21 @@ const Index = () => {
     );
   }, [allNegativeAttrs, filters.weaponRivenType]);
 
-  // Derive selected row from lifted selection state
+  // Derive the full RivenRow for the selected auction ID so EstimateSheet can
+  // display the riven name and weapon without prop-drilling the entire rows array.
   const selectedRow = useMemo(
     () => (selectedId ? (rows.find((r) => r.id === selectedId) ?? null) : null),
     [selectedId, rows],
   );
 
+  // The Estimate button is only active when a row is selected, the last search
+  // succeeded, and a weapon is chosen (needed to call /api/estimate).
   const canEstimate =
     selectedId !== null && status === "success" && filters.weaponName !== "";
 
+  // handleSearch — fires when the user clicks Search or when crossplay toggles.
+  // Resets all result state before the request so stale data is never shown, then
+  // serialises the current filter values into query params and calls /api/search.
   const handleSearch = useCallback(async () => {
     setStatus("loading");
     setError("");
@@ -136,6 +145,7 @@ const Index = () => {
       const res = await fetch(`/api/search?${params.toString()}`);
 
       if (!res.ok) {
+        // Backend returns { errors: string[] } for validation/upstream failures
         const body = await res.json();
         const msg = Array.isArray(body.errors)
           ? body.errors.join("\n")
@@ -150,6 +160,7 @@ const Index = () => {
       setStats(data.stats);
       setStatus("success");
     } catch {
+      // Network-level failure (backend not running, DNS error, etc.)
       setError(
         "Could not connect to the backend. Make sure backend/main.py is running.",
       );
@@ -157,6 +168,9 @@ const Index = () => {
     }
   }, [filters]);
 
+  // handleEstimate — fires when the user clicks "Estimate" on a selected row.
+  // Parses the display-format attribute strings back into url_name:value pairs
+  // (the format /api/estimate expects) and opens the EstimateSheet panel.
   const handleEstimate = useCallback(async () => {
     if (!selectedRow || !filters.weaponName) return;
 
@@ -165,6 +179,7 @@ const Index = () => {
       .map(parseAttributeDisplay)
       .filter((a): a is NonNullable<typeof a> => a !== null);
 
+    // Cannot estimate without at least one positive attribute value
     if (positiveParsed.length === 0) return;
 
     const params = new URLSearchParams();
@@ -174,6 +189,7 @@ const Index = () => {
       positiveParsed.map((a) => `${a.urlName}:${a.value}`).join(","),
     );
 
+    // Only the first negative attribute is sent — rivens have at most one negative
     if (selectedRow.negativeAttributes.length > 0) {
       const negParsed = parseAttributeDisplay(
         selectedRow.negativeAttributes[0],
@@ -199,6 +215,7 @@ const Index = () => {
       const res = await fetch(`/api/estimate?${params.toString()}`);
 
       if (!res.ok) {
+        // Backend returns { errors: string[] } for validation failures
         const body = await res.json();
         const msg = Array.isArray(body.errors)
           ? body.errors.join("\n")
@@ -212,12 +229,14 @@ const Index = () => {
       setEstimateResult(data);
       setEstimateStatus("success");
     } catch {
+      // Network-level failure — backend unreachable
       setEstimateError("Could not connect to the backend.");
       setEstimateStatus("error");
     }
   }, [selectedRow, filters.weaponName, filters.platform, filters.crossplay]);
 
-  // Auto-search when crossplay changes, but not on initial mount
+  // Auto-search when crossplay changes, but not on initial mount (status === "idle").
+  // This keeps results fresh without requiring the user to manually re-click Search.
   useEffect(() => {
     if (status !== "idle") {
       handleSearch();
