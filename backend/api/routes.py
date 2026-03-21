@@ -5,6 +5,7 @@ from flask_cors import CORS
 from services import auction_service as rv
 from services import cache_service as cache
 from evaluation import compute_stats, estimate_price
+from core.models import AttributeInput
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:8080"])  # Allow React frontend to access API
@@ -37,7 +38,7 @@ def health():
     return jsonify(status), http_status
 
 
-def _int_or_none(value: str):
+def _int_or_none(value: str) -> int | None:
     # Converts a query string value to int, returns None if blank, missing, or non-numeric.
     v = (value or "").strip()
     if not v:
@@ -48,7 +49,7 @@ def _int_or_none(value: str):
         return None
 
 
-def _str_or_none(value: str):
+def _str_or_none(value: str) -> str | None:
     # Strips and lowercases a query string value, returns None if blank.
     v = (value or "").strip().lower()
     return v if v else None
@@ -126,8 +127,8 @@ def riven_attributes():
     })
 
 
-def _parse_attr_pairs(raw: str) -> list[dict] | None:
-    """Parse 'url_name:value,url_name:value' into [{"url_name": str, "value": float}, ...].
+def _parse_attr_pairs(raw: str) -> list[AttributeInput] | None:
+    """Parse 'url_name:value,url_name:value' into a list of AttributeInput.
 
     Returns None if the string is empty or malformed.
     """
@@ -147,7 +148,7 @@ def _parse_attr_pairs(raw: str) -> list[dict] | None:
         if not math.isfinite(value):
             return None
         if name:
-            pairs.append({"url_name": name, "value": value})
+            pairs.append(AttributeInput(url_name=name, value=value))
     return pairs if pairs else None
 
 

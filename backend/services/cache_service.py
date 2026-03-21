@@ -14,6 +14,7 @@ import os
 import threading
 import requests
 from datetime import datetime, timezone, timedelta
+from typing import Callable
 from core.config import API_HEADERS, API_BASE_URL, WARFRAMESTAT_WEAPONS_URL
 from services.warframe_client import _rate_limited_get
 CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".cache")
@@ -148,7 +149,12 @@ def _build_disposition_map(data: list[dict]) -> dict[str, int]:
 # Public API
 # ---------------------------------------------------------------------------
 
-def _refresh_cache(name: str, fetch_fn, mem_lock: threading.Lock, setter):
+def _refresh_cache(
+    name: str,
+    fetch_fn: Callable[[], list[dict]],
+    mem_lock: threading.Lock,
+    setter: Callable[[list[dict]], None],
+) -> None:
     """Fetch fresh data and update both disk and in-memory cache."""
     try:
         data = fetch_fn()
@@ -160,13 +166,13 @@ def _refresh_cache(name: str, fetch_fn, mem_lock: threading.Lock, setter):
         print(f"[cache] Failed to refresh {name}: {e}")
 
 
-def _set_weapons(data):
+def _set_weapons(data: list[dict]) -> None:
     global _weapons, _merged_weapons
     _weapons = data
     _merged_weapons = None  # invalidate derived cache
 
 
-def _set_attributes(data):
+def _set_attributes(data: list[dict]) -> None:
     global _attributes, _positive_attr_names, _negative_attr_names
     _attributes = data
     _positive_attr_names = None  # invalidate derived caches
@@ -180,7 +186,7 @@ def _set_attributes(data):
         print(f"[cache] WARNING: {w}")
 
 
-def _set_dispositions(data):
+def _set_dispositions(data: list[dict]) -> None:
     global _disposition_map, _merged_weapons
     _disposition_map = _build_disposition_map(data) if data else None
     _merged_weapons = None  # invalidate derived cache

@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 from urllib.parse import urlencode
 
 from core.config import API_BASE_URL, DROPDOWN_OPTIONS, VALID_PLATFORMS
@@ -18,7 +19,7 @@ VALID_POLARITY = set(DROPDOWN_OPTIONS["polarity"])
 # Normalization — clean raw filter input before validation
 # ---------------------------------------------------------------------------
 
-def _normalize_attribute_input(raw):
+def _normalize_attribute_input(raw: str | None) -> str | None:
     # Accepts a raw attribute string that may contain spaces, mixed separators, etc.
     # Returns a clean comma-separated string of url_names the API expects.
     # e.g. "critical chance, multishot" → "critical_chance,multishot"
@@ -29,7 +30,7 @@ def _normalize_attribute_input(raw):
     return ",".join(parts) if parts else None
 
 
-def normalize_filters(filters):
+def normalize_filters(filters: dict[str, Any]) -> dict[str, Any]:
     # Defaults re_rolls_min to 0 when unset (API needs an explicit value).
     # Strips polarity "any" — omitting the param means "no preference", sending "any" filters incorrectly.
     # Normalizes attribute inputs: replaces spaces with underscores, strips whitespace around commas.
@@ -56,7 +57,7 @@ def normalize_filters(filters):
 # Validation — reject values the API will not accept
 # ---------------------------------------------------------------------------
 
-def validate_filters(filters):
+def validate_filters(filters: dict[str, Any]) -> list[str]:
     # Checks a normalized filter dict for values the API will reject.
     # Returns a list of human-readable error strings — empty means valid.
     errors = []
@@ -151,7 +152,7 @@ def validate_filters(filters):
 # Param building — convert validated filters into API query params
 # ---------------------------------------------------------------------------
 
-def build_params(filters):
+def build_params(filters: dict[str, Any]) -> dict[str, Any]:
     # Converts a validated filter dict into the query params the API expects.
     # None values are stripped so they don't get sent as literal "None" strings.
     params = {
@@ -202,7 +203,12 @@ def _execute_search(filters: dict) -> tuple[list[Auction] | None, list[str] | No
     return [Auction.from_api(a) for a in raw], None
 
 
-def fetch_weapon_auctions(weapon_url_name, platform="pc", crossplay="true", sort_by="price_desc"):
+def fetch_weapon_auctions(
+    weapon_url_name: str,
+    platform: str = "pc",
+    crossplay: str = "true",
+    sort_by: str = "price_desc",
+) -> tuple[list[Auction] | None, list[str] | None]:
     """Fetch all auctions for a weapon. No stat filters applied."""
     return _execute_search({
         "weapon_url_name": weapon_url_name,
@@ -212,7 +218,7 @@ def fetch_weapon_auctions(weapon_url_name, platform="pc", crossplay="true", sort
     })
 
 
-def search_auctions(filters):
+def search_auctions(filters: dict[str, Any]) -> tuple[dict[str, Any] | None, list[str] | None]:
     """Main entry point: search + compute stats + format for frontend."""
     auctions, errors = _execute_search(filters)
     if errors:

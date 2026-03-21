@@ -5,6 +5,12 @@ from core.config import AUCTION_BASE_URL
 
 
 @dataclass
+class AttributeInput:
+    url_name: str
+    value: float
+
+
+@dataclass
 class RivenAttribute:
     url_name: str
     value: float

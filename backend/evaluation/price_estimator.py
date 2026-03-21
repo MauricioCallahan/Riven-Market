@@ -7,15 +7,26 @@ a weighted-average price estimate from comparable auctions.
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from enum import Enum
 from statistics import quantiles
 
-from core.models import Auction
+from core.models import Auction, AttributeInput
 from evaluation.stat_weights import compute_stat_weights, get_effective_price
-from evaluation.archetypes import classify_attributes, classify_auction, is_compatible
+from evaluation.archetypes import Archetype, classify_attributes, classify_auction, is_compatible
 from evaluation.similarity import (
     build_stat_vector_from_raw,
     compute_similarity,
 )
+
+
+# ---------------------------------------------------------------------------
+# Enums
+# ---------------------------------------------------------------------------
+
+class ConfidenceLevel(str, Enum):
+    HIGH   = "high"
+    MEDIUM = "medium"
+    LOW    = "low"
 
 
 # ---------------------------------------------------------------------------
@@ -38,7 +49,7 @@ class SimilarityResult:
     """A candidate auction with its similarity score and archetype."""
     auction: Auction
     similarity: float
-    archetype: str
+    archetype: Archetype
 
     def to_dict(self) -> dict:
         return {
@@ -52,9 +63,9 @@ class SimilarityResult:
 class PriceEstimate:
     """Final output of the pricing pipeline."""
     estimated_price: float
-    confidence: str
+    confidence: ConfidenceLevel
     comparable_count: int
-    archetype: str
+    archetype: Archetype
     comparables: list[SimilarityResult] = field(default_factory=list)
     stat_weights: dict[str, float] = field(default_factory=dict)
 
@@ -132,13 +143,13 @@ def _remove_outliers(
     return [r for r in results if lower <= r[0] <= upper]
 
 
-def _confidence_level(count: int) -> str:
+def _confidence_level(count: int) -> ConfidenceLevel:
     """Determine confidence based on number of comparables."""
     if count >= 10:
-        return "high"
+        return ConfidenceLevel.HIGH
     if count >= 5:
-        return "medium"
-    return "low"
+        return ConfidenceLevel.MEDIUM
+    return ConfidenceLevel.LOW
 
 
 # ---------------------------------------------------------------------------
@@ -146,8 +157,8 @@ def _confidence_level(count: int) -> str:
 # ---------------------------------------------------------------------------
 
 def estimate_price(
-    positive_attrs: list[dict],
-    negative_attr: dict | None,
+    positive_attrs: list[AttributeInput],
+    negative_attr: AttributeInput | None,
     re_rolls: int,
     auctions: list[Auction],
     disposition: int,
@@ -177,9 +188,9 @@ def estimate_price(
     )
 
     # 3. Classify target
-    target_pos_names = [a["url_name"] for a in positive_attrs]
+    target_pos_names = [a.url_name for a in positive_attrs]
     target_archetype = classify_attributes(target_pos_names)
-    target_neg_names = {negative_attr["url_name"]} if negative_attr else set()
+    target_neg_names = {negative_attr.url_name} if negative_attr else set()
 
     # 4. Score each auction
     scored: list[SimilarityResult] = []

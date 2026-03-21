@@ -6,7 +6,7 @@ similarity scores with adjustments for negative stats and reroll distance.
 """
 
 import math
-from core.models import Auction, RivenAttribute
+from core.models import Auction, AttributeInput, RivenAttribute
 from evaluation.riven_math import normalize_roll
 
 
@@ -86,16 +86,12 @@ def build_stat_vector(
 
 
 def build_stat_vector_from_raw(
-    positive_attrs: list[dict],
-    negative_attr: dict | None,
+    positive_attrs: list[AttributeInput],
+    negative_attr: AttributeInput | None,
     stat_weights: dict[str, float],
     disposition: int,
 ) -> dict[str, float]:
-    """Build a stat vector from raw attribute dicts (for the target riven).
-
-    positive_attrs: [{url_name, value}, ...]
-    negative_attr:  {url_name, value} or None
-    """
+    """Build a stat vector from AttributeInput objects (for the target riven)."""
     num_positives = len(positive_attrs)
     has_negative = negative_attr is not None
     default_weight = 1.0 / max(len(stat_weights), 1)
@@ -104,27 +100,27 @@ def build_stat_vector_from_raw(
 
     for attr in positive_attrs:
         norm = normalize_roll(
-            url_name=attr["url_name"],
-            actual_value=attr["value"],
+            url_name=attr.url_name,
+            actual_value=attr.value,
             disposition=disposition,
             num_positives=num_positives,
             has_negative=has_negative,
             is_positive_stat=True,
         )
-        weight = stat_weights.get(attr["url_name"], default_weight)
-        vector[attr["url_name"]] = norm * weight
+        weight = stat_weights.get(attr.url_name, default_weight)
+        vector[attr.url_name] = norm * weight
 
     if negative_attr:
         norm = normalize_roll(
-            url_name=negative_attr["url_name"],
-            actual_value=negative_attr["value"],
+            url_name=negative_attr.url_name,
+            actual_value=negative_attr.value,
             disposition=disposition,
             num_positives=num_positives,
             has_negative=True,
             is_positive_stat=False,
         )
-        weight = stat_weights.get(negative_attr["url_name"], default_weight)
-        vector[negative_attr["url_name"]] = -(norm * weight)
+        weight = stat_weights.get(negative_attr.url_name, default_weight)
+        vector[negative_attr.url_name] = -(norm * weight)
 
     return vector
 

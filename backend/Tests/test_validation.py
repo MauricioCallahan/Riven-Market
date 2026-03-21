@@ -7,10 +7,12 @@ try:
     # Try package-style import first
     from backend.api.routes import _int_or_none, _parse_attr_pairs
     from backend.services.auction_service import normalize_filters, validate_filters
+    from backend.core.models import AttributeInput
 except ImportError:
     # Fallback for direct execution (backend/ is now in sys.path)
     from api.routes import _int_or_none, _parse_attr_pairs
     from services.auction_service import normalize_filters, validate_filters
+    from core.models import AttributeInput
 
 # ---------------------------------------------------------------------------
 # Helpers / Wrappers
@@ -86,18 +88,18 @@ def test_int_or_none():
 def test_parse_attr_pairs():
     # Valid
     check_parse_attr_pairs("crit_chance:150,multishot:90.5", [
-        {"url_name": "crit_chance", "value": 150.0},
-        {"url_name": "multishot", "value": 90.5},
+        AttributeInput(url_name="crit_chance", value=150.0),
+        AttributeInput(url_name="multishot", value=90.5),
     ])
 
     # Whitespace normalization
     check_parse_attr_pairs(" crit_chance : 150 ", [
-        {"url_name": "crit_chance", "value": 150.0},
+        AttributeInput(url_name="crit_chance", value=150.0),
     ])
 
     # Case normalization
     check_parse_attr_pairs("Crit Chance: 150", [
-        {"url_name": "crit_chance", "value": 150.0},
+        AttributeInput(url_name="crit_chance", value=150.0),
     ])
 
     # Trailing Comma (Empty segment)
@@ -107,8 +109,8 @@ def test_parse_attr_pairs():
 
     # Duplicate Keys
     check_parse_attr_pairs("crit:1,crit:2", [
-        {"url_name": "crit", "value": 1.0},
-        {"url_name": "crit", "value": 2.0},
+        AttributeInput(url_name="crit", value=1.0),
+        AttributeInput(url_name="crit", value=2.0),
     ])
 
     # Invalid Formats

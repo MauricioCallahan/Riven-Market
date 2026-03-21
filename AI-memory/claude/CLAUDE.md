@@ -68,6 +68,15 @@
 
 - Git: `AI-memory/` is PUBLIC. Use standard `git add` for syncs.
 
+## Code Style Rules
+
+- All functions must have type hints on parameters and return values
+- No raw dicts for structured data — use @dataclass instead
+- Magic strings/ints must be Enum classes
+- Loose utility functions must live inside a class
+- Constants defined at module level in ALL_CAPS
+- Abstract base classes required wherever multiple classes share an interface
+
 
 
 

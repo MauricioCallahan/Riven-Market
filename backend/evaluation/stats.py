@@ -13,14 +13,20 @@ def _field_stats(values: list[int | float]) -> FieldStats | None:
     )
 
 
-def compute_stats(auctions: list[Auction]) -> PriceStats:
-    buyouts = [a.buyout_price for a in auctions if a.buyout_price is not None]
-    start_bids = [a.starting_price for a in auctions if a.starting_price is not None]
-    top_bids = [a.top_bid for a in auctions if a.top_bid is not None]
+class StatsCalculator:
+    @staticmethod
+    def compute_stats(auctions: list[Auction]) -> PriceStats:
+        buyouts = [a.buyout_price for a in auctions if a.buyout_price is not None]
+        start_bids = [a.starting_price for a in auctions if a.starting_price is not None]
+        top_bids = [a.top_bid for a in auctions if a.top_bid is not None]
 
-    return PriceStats(
-        count=len(auctions),
-        buyout=_field_stats(buyouts),
-        start_bid=_field_stats(start_bids),
-        top_bid=_field_stats(top_bids),
-    )
+        return PriceStats(
+            count=len(auctions),
+            buyout=_field_stats(buyouts),
+            start_bid=_field_stats(start_bids),
+            top_bid=_field_stats(top_bids),
+        )
+
+
+# Module-level alias for backward-compatible imports
+compute_stats = StatsCalculator.compute_stats
