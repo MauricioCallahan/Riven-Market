@@ -36,7 +36,7 @@
 ### Validation
 
 - [x] **VAL-001** Enforce `mastery_rank_min = 8` floor on the mastery rank input — rivens require MR 8 minimum. Clamp or show a validation error in both frontend and backend `validate_filters()`.
-- [ ] **VAL-002** Validate that `mastery_rank_min <= mastery_rank_max` when both are set — no cross-field check exists. Add to both frontend (disable/warn when min > max) and backend `validate_filters()`.
+- [x] **VAL-002** Validate that `mastery_rank_min <= mastery_rank_max` when both are set — backend check already existed; added frontend inline warning in FilterSidebar + backend test.
 
 ### Frontend Reliability
 
@@ -44,29 +44,25 @@
 
 ### Backend Reliability
 
-- [ ] **RELY-004** Structured logging — replace all `print()` with Python `logging` module.
-  - Create `backend/logger.py`: basic config with timestamps, log level from `LOG_LEVEL` env var (default `INFO`), console handler. No Flask dependency.
-  - Replace every `print()` across all backend files with appropriate levels: `info` for normal flow, `warning` for fallbacks/stale data, `error` for failures.
-  - Add one request-level log line in `server.py` per search: endpoint, params, response status. No per-auction logging.
-  - Commit separately.
-- [ ] **CACHE-001** Add result-level search cache to backend for warframe.market outage fallback.
+- [x] **RELY-004** Structured logging — replaced all `print()` in production backend code with `logging` module. `main.py` already had `logging.basicConfig` with `LOG_LEVEL` env var. Test files retain `print()` for diagnostics.
+- [x] **CACHE-001** Add result-level search cache to backend for warframe.market outage fallback.
   - **cache.py** — Add `SearchResultCache` class (or extend existing singleton). File-based JSON in `cache/search_results/`. TTL: 24h. No Flask imports. Methods: `get(key) -> dict | None`, `set(key, params, auctions)`. Write must be non-blocking (background thread or fire-and-forget).
   - **rivens.py** — After params are validated/built, generate a deterministic SHA256 cache key from sorted params. Happy path: call API → write result cache in background → return fresh data with `stale: false, cached_at: null`. Failure path: attempt cache lookup → if hit and within TTL, return with `stale: true, cached_at: <ISO>` → if miss, re-raise 502 as before. No retries in rivens.py — that stays in api_client.py.
   - **server.py** — Ensure `/api/search` response always includes `stale` (bool, default false) and `cached_at` (ISO string or null) — stable shape regardless of code path.
   - **Cache key format**: `sha256(json.dumps(sorted_params, sort_keys=True))` where params include weapon, attributes, platform, sort, filters. Normalize before hashing (strip None values, sort lists).
-- [ ] **RELY-001** Request deduplication — identical concurrent searches collapse into a single warframe.market API call.
+- [x] **RELY-001** Request deduplication — identical concurrent searches collapse into a single warframe.market API call.
   - In `cache.py`, maintain a `dict[str, threading.Event]` of in-flight keys. Before dispatching an API call, check if the same key is already in-flight; if so, wait on the Event and return the stored result. On completion, store result, set Event, clean up entry.
   - Use the same cache key format as CACHE-001 (SHA256 of sorted params).
   - Must not block unrelated searches — only deduplicates identical concurrent ones.
   - No new module-level singletons — attach state to the existing cache singleton.
   - Commit separately.
-- [ ] **RELY-002** Pricing confidence signal — add `sample_size` and `confidence` to evaluation output.
+- [x] **RELY-002** Pricing confidence signal — add `sample_size` and `confidence` to evaluation output.
   - In the `evaluation/` module (not `server.py`), compute `sample_size: int` and `confidence: "low" | "medium" | "high"` alongside existing price stats. Thresholds as constants: low < 5, medium 5–15, high > 15.
   - Bubble both fields up through `rivens.py` and into the `/api/search` response shape.
   - Fields must always be present (never absent), defaulting to `sample_size: 0, confidence: "low"` on empty results.
   - No Flask imports in the evaluation module.
   - Commit separately.
-- [ ] **RELY-003** Disposition staleness detection — surface stale disposition data in the search response.
+- [x] **RELY-003** Disposition staleness detection — surface stale disposition data in the search response.
   - In `cache.py`, record a `last_updated: datetime` timestamp whenever disposition data is successfully refreshed from warframestat.us.
   - Expose `cache.get_disposition_age() -> timedelta | None`.
   - Add `disposition_stale: bool` to `/api/search` response — `true` if disposition data is older than 7 days or unavailable. Informational only; never block searches.
