@@ -202,21 +202,37 @@ def _execute_search(
     cache_key_params = {**params, "_platform": platform, "_crossplay": crossplay}
     cache_key = SearchResultCache.build_cache_key(cache_key_params)
 
+    # Deduplication: collapse identical concurrent requests into one API call
+    is_owner, dedup_data, dedup_error = _search_cache.acquire_or_wait(cache_key)
+
+    if not is_owner:
+        if dedup_error:
+            cached = _search_cache.get(cache_key)
+            if cached:
+                return (
+                    [Auction.from_api(a) for a in cached.auctions],
+                    None, True, cached.cached_at,
+                )
+            return None, ["Request failed. Please try again later."], False, None
+        if dedup_data is not None:
+            return [Auction.from_api(a) for a in dedup_data], None, False, None
+        return None, ["Request failed. Please try again later."], False, None
+
     try:
         raw = search_auctions_raw(params, platform, crossplay)
         _search_cache.set(cache_key, raw)
+        _search_cache.complete(cache_key, raw, None)
         return [Auction.from_api(a) for a in raw], None, False, None
     except Exception as e:
         logger.error("Upstream API request failed: %s", e, exc_info=True)
+        _search_cache.complete(cache_key, None, e)
         # Fallback: serve stale cached result
         cached = _search_cache.get(cache_key)
         if cached:
             logger.info("Serving stale cached result for key %s", cache_key[:12])
             return (
                 [Auction.from_api(a) for a in cached.auctions],
-                None,
-                True,
-                cached.cached_at,
+                None, True, cached.cached_at,
             )
         return None, ["Request failed. Please try again later."], False, None
 

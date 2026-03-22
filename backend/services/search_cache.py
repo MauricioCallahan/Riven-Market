@@ -29,8 +29,17 @@ class CachedResult:
     cached_at: str  # ISO 8601
 
 
+@dataclass
+class _InFlightEntry:
+    """Tracks a single in-flight API request for deduplication."""
+    event: threading.Event
+    result: list[dict] | None = None
+    error: Exception | None = None
+
+
 class SearchResultCache:
-    """File-based JSON cache for search results with background writes."""
+    """File-based JSON cache for search results with background writes
+    and request deduplication for concurrent identical searches."""
 
     def __init__(
         self,
@@ -39,6 +48,8 @@ class SearchResultCache:
     ) -> None:
         self._cache_dir = cache_dir
         self._ttl = ttl
+        self._in_flight: dict[str, _InFlightEntry] = {}
+        self._in_flight_lock = threading.Lock()
 
     @staticmethod
     def build_cache_key(params: dict[str, Any]) -> str:
@@ -90,3 +101,52 @@ class SearchResultCache:
                 json.dump(blob, f, ensure_ascii=False)
         except OSError as e:
             logger.warning("Failed to write search cache: %s", e)
+
+    # ------------------------------------------------------------------
+    # Request deduplication
+    # ------------------------------------------------------------------
+
+    def acquire_or_wait(
+        self, key: str,
+    ) -> tuple[bool, list[dict] | None, Exception | None]:
+        """Try to become the owner of an in-flight request for *key*.
+
+        Returns (is_owner, result_data, error):
+        - (True, None, None)       — caller should proceed with the API call
+        - (False, data, None)      — another thread completed successfully
+        - (False, None, exception) — another thread's request failed
+        """
+        with self._in_flight_lock:
+            if key in self._in_flight:
+                entry = self._in_flight[key]
+            else:
+                self._in_flight[key] = _InFlightEntry(event=threading.Event())
+                return True, None, None
+
+        # Wait for the owning thread to finish (does not hold the lock)
+        entry.event.wait()
+        return False, entry.result, entry.error
+
+    def complete(
+        self,
+        key: str,
+        result: list[dict] | None,
+        error: Exception | None,
+    ) -> None:
+        """Signal that the in-flight request for *key* is done."""
+        with self._in_flight_lock:
+            entry = self._in_flight.get(key)
+
+        if entry is None:
+            return
+
+        entry.result = result
+        entry.error = error
+        entry.event.set()
+
+        # Clean up after a short delay so all waiters can read the result
+        def _cleanup() -> None:
+            with self._in_flight_lock:
+                self._in_flight.pop(key, None)
+
+        threading.Timer(1.0, _cleanup).start()
