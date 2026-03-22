@@ -11,32 +11,36 @@ from evaluation.riven_math import normalize_roll
 
 
 # ---------------------------------------------------------------------------
-# Negative stat classifications
+# Negative stat quality scores
 # ---------------------------------------------------------------------------
 
-# Negatives that are desirable (reducing these is good or inconsequential)
-DESIRABLE_NEGATIVES: set[str] = {
-    "recoil",
-    "zoom",
-    "impact_damage",
-    "puncture_damage",
-    "chance_to_gain_combo_count",
-    "finisher_damage",
+# Per-stat similarity adjustment when a negative appears on a riven.
+# Positive = desirable negative (boosts similarity), negative = harmful.
+NEGATIVE_QUALITY: dict[str, float] = {
+    # Desirable negatives (positive adjustment)
+    "zoom":                          +0.08,   # best negative in the game
+    "recoil":                        +0.06,
+    "puncture_damage":               +0.05,
+    "impact_damage":                 +0.05,
+    "finisher_damage":               +0.04,   # irrelevant on ranged
+    "chance_to_gain_combo_count":    +0.03,
+    # Neutral negatives (minor or no adjustment)
+    "ammo_maximum":                  +0.02,
+    "status_duration":               +0.01,
+    "magazine_capacity":              0.00,
+    "projectile_speed":               0.00,
+    "reload_speed":                  -0.02,
+    # Undesirable negatives (penalty)
+    "fire_rate_/_attack_speed":      -0.06,
+    "status_chance":                 -0.08,
+    "base_damage_/_melee_damage":    -0.12,
+    "multishot":                     -0.12,
+    "critical_damage":               -0.14,
+    "critical_chance":               -0.15,
 }
 
-# Negatives that are undesirable (reducing these hurts most builds)
-UNDESIRABLE_NEGATIVES: set[str] = {
-    "critical_chance",
-    "critical_damage",
-    "base_damage_/_melee_damage",
-    "multishot",
-    "status_chance",
-    "fire_rate_/_attack_speed",
-}
+_DEFAULT_NEGATIVE_QUALITY: float = -0.03  # unknown negatives get a mild penalty
 
-# Adjustment values
-_DESIRABLE_BONUS = 0.05
-_UNDESIRABLE_PENALTY = -0.10
 # Reroll penalty divisor — higher = gentler penalty
 _REROLL_DIVISOR = 20.0
 
@@ -157,19 +161,19 @@ def _negative_adjustment(
 ) -> float:
     """Compute similarity adjustment based on negative stat quality.
 
-    +0.05 for each desirable negative shared by both.
-    -0.10 for each undesirable negative in candidate but NOT in target.
+    Each negative stat has a per-stat quality score from NEGATIVE_QUALITY.
+    - Shared negatives: apply the candidate's full quality score
+    - Candidate-only negatives: only penalize if the negative is harmful
+    - Target-only negatives: no adjustment
     """
     adjustment = 0.0
-
-    # Bonus for shared desirable negatives
-    shared_desirable = (target_neg_names & candidate_neg_names) & DESIRABLE_NEGATIVES
-    adjustment += len(shared_desirable) * _DESIRABLE_BONUS
-
-    # Penalty for undesirable negatives that the candidate has but the target doesn't
-    candidate_only_undesirable = (candidate_neg_names - target_neg_names) & UNDESIRABLE_NEGATIVES
-    adjustment += len(candidate_only_undesirable) * _UNDESIRABLE_PENALTY
-
+    for neg in candidate_neg_names:
+        score = NEGATIVE_QUALITY.get(neg, _DEFAULT_NEGATIVE_QUALITY)
+        if neg in target_neg_names:
+            adjustment += score
+        else:
+            # Candidate has a negative the target doesn't — only penalize if bad
+            adjustment += min(0.0, score)
     return adjustment
 
 
