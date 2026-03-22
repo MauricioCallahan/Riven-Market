@@ -56,6 +56,8 @@
   
 - Logic: Commit per logical unit. Never batch unrelated changes. Doc syncs happen at SESSION END only.
 
+- When AI-memory/claude/todo.md has edits, commit and push to git after the last change
+
 ## BOUNDARIES
 
 - Edit only `src/`, `AI-memory/`, or root configs.

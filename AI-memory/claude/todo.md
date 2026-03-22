@@ -83,6 +83,21 @@
   - Commit backend and frontend separately.
 - [ ] Mobile-responsive layout — collapsible sidebar/drawer for small screens
 
+### Price Estimator Accuracy
+
+- [x] **EVAL-001** Graduated negative stat scoring — replaced flat ±0.05/0.10 with per-stat `NEGATIVE_QUALITY` dict in `similarity.py`. 16 stats scored from +0.08 (zoom) to −0.15 (crit_chance).
+- [x] **EVAL-002** Elemental stat differentiation — applied meta-driven multipliers (Toxin 1.25×, Heat 1.15×, Cold/Electric 1.0×) to frequency-based stat weights in `stat_weights.py`, then re-normalized.
+- [x] **EVAL-003** Roll quality multiplier — piecewise linear 0.7–1.1× multiplier in `similarity.py` based on average `normalize_roll()` of positive stats. 50% roll = neutral (1.0×).
+- [x] **EVAL-004** Weapon demand / listing volume signal — `_confidence_level()` in `price_estimator.py` now factors total auction volume (can only lower confidence). Added `total_auctions` field to `PriceEstimate`.
+- [ ] **EVAL-005** 0-reroll meta weapon pricing — for S-tier weapons (from `overframe_tiers.json`) with 0 rerolls, bypass similarity pipeline and price based on other 0-reroll auctions for the same weapon. Additional Incarnon bonus if weapon is in `incarnon_weapons.json`. warframe.market API supports `re_rolls_min=0, re_rolls_max=0` filtering natively.
+
+## Long-Term Additions
+
+- [ ] **ML-001** ML-based pricing model — replace hand-tuned stat weights with a trained model (XGBoost/LightGBM). Two-stage architecture: (1) predict weapon base riven price from weapon + disposition, (2) predict stat quality multiplier from stat combination + roll quality. Use quantile regression (10th/50th/90th percentile) for price ranges instead of point estimates. Requires historical auction data collection (see ML-002).
+  - Reference: [ML Hedonic Price Indices (NBER)](https://www.nber.org/papers/w31315), [UMich paper](https://public.websites.umich.edu/~shapiro/papers/ML_Hedonics.pdf)
+- [ ] **ML-002** Historical auction data pipeline — collect and store warframe.market auction snapshots over time to build a training dataset for ML-001. Features: weapon, disposition, each stat (binary + value), negative stat, re-roll count, polarity. Label: buyout_price. Investigate closed/sold auction endpoints via [warframe.market API](https://warframe.market/api_docs) and [WFCD market-api-spec](https://github.com/WFCD/market-api-spec/blob/master/openapi.yaml).
+- [ ] **DISPO-001** Disposition trajectory tracking — store disposition history per weapon and surface a trend indicator (stable/rising/falling). Weapons with declining disposition represent price risks. DE updates dispositions every Prime Access (~quarterly). Advisory/UX feature, not a direct pricing algorithm change.
+
 ---
 
 ## Completed
