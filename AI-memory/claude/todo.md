@@ -44,7 +44,7 @@
 
 ### Backend Reliability
 
-- [x] **RELY-004** Structured logging — replaced all `print()` in production backend code with `logging` module. `main.py` already had `logging.basicConfig` with `LOG_LEVEL` env var. Test files retain `print()` for diagnostics.
+- [x] **RELY-004** Structured logging — replaced all `print()` in production backend code with `logging` module. `main.py` already had `logging.basicConfig` with `LOG_LEVEL` env var (default changed to INFO). Added per-request log line in routes.py. Test files retain `print()` for diagnostics.
 - [x] **CACHE-001** Add result-level search cache to backend for warframe.market outage fallback.
   - **cache.py** — Add `SearchResultCache` class (or extend existing singleton). File-based JSON in `cache/search_results/`. TTL: 24h. No Flask imports. Methods: `get(key) -> dict | None`, `set(key, params, auctions)`. Write must be non-blocking (background thread or fire-and-forget).
   - **rivens.py** — After params are validated/built, generate a deterministic SHA256 cache key from sorted params. Happy path: call API → write result cache in background → return fresh data with `stale: false, cached_at: null`. Failure path: attempt cache lookup → if hit and within TTL, return with `stale: true, cached_at: <ISO>` → if miss, re-raise 502 as before. No retries in rivens.py — that stays in api_client.py.
