@@ -3,16 +3,9 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
-try:
-    # Try package-style import first
-    from backend.api.routes import _int_or_none, _parse_attr_pairs
-    from backend.services.auction_service import normalize_filters, validate_filters
-    from backend.core.models import AttributeInput
-except ImportError:
-    # Fallback for direct execution (backend/ is now in sys.path)
-    from api.routes import _int_or_none, _parse_attr_pairs
-    from services.auction_service import normalize_filters, validate_filters
-    from core.models import AttributeInput
+from api.routes import _int_or_none, _parse_attr_pairs
+from services.auction_service import normalize_filters, validate_filters
+from core.models import AttributeInput
 
 # ---------------------------------------------------------------------------
 # Helpers / Wrappers
