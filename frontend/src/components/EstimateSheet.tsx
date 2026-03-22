@@ -42,9 +42,9 @@ const confidenceColor: Record<string, string> = {
 };
 
 const confidenceTooltip: Record<string, string> = {
-  high: "10+ comparable listings found",
-  medium: "5–9 comparable listings found",
-  low: "Fewer than 5 comparable listings found",
+  high: "High confidence: 2+ verified bids from distinct reputable bidders",
+  medium: "Medium confidence: 1 verified bid from a reputable bidder",
+  low: "Low confidence: no verified bid activity, using buyout price fallback",
 };
 
 const archetypeColor: Record<string, string> = {
@@ -149,9 +149,18 @@ export default function EstimateSheet({
 
         {status === "success" && estimate && (
           <div className="flex flex-col gap-6 pt-2">
-            {/* Hero — headline price */}
+            {/* Hero — price range */}
             <div className="flex flex-col items-center gap-2 py-4 rounded-lg border border-border bg-muted/30">
-              {estimate.estimatedPrice > 0 ? (
+              {estimate.priceHigh > 0 ? (
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-3xl font-bold tracking-tight">
+                    {Math.round(estimate.priceLow)}–{Math.round(estimate.priceHigh)}p
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {formatPrice(estimate.estimatedPrice)}
+                  </span>
+                </div>
+              ) : estimate.estimatedPrice > 0 ? (
                 <span className="text-3xl font-bold tracking-tight">
                   {formatPrice(estimate.estimatedPrice)}
                 </span>
@@ -189,8 +198,19 @@ export default function EstimateSheet({
                 </Tooltip>
               </div>
               <span className="text-xs text-muted-foreground">
-                Based on {estimate.comparableCount} comparable listing
-                {estimate.comparableCount !== 1 ? "s" : ""}
+                {estimate.bidConfidenceTier <= 2 ? (
+                  <>
+                    Based on {estimate.validatedBidCount} verified bid
+                    {estimate.validatedBidCount !== 1 ? "s" : ""} across{" "}
+                    {estimate.auctionsWithBids} auction
+                    {estimate.auctionsWithBids !== 1 ? "s" : ""}
+                  </>
+                ) : (
+                  <>
+                    Based on {estimate.comparableCount} comparable listing
+                    {estimate.comparableCount !== 1 ? "s" : ""} (no bid activity)
+                  </>
+                )}
               </span>
             </div>
 

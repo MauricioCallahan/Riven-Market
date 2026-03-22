@@ -18,6 +18,39 @@ class AttributeInput:
 
 
 @dataclass
+class AuctionOwner:
+    """Seller info extracted from auction search results."""
+    id: str
+    reputation: int
+    ingame_name: str
+
+
+@dataclass
+class Bid:
+    """A single bid on an auction, parsed from the bids endpoint."""
+    id: str
+    value: int
+    user_id: str
+    user_reputation: int
+    user_ingame_name: str
+    created: datetime | None
+    updated: datetime | None
+
+    @classmethod
+    def from_api(cls, raw: dict) -> "Bid":
+        user = raw.get("user", {})
+        return cls(
+            id=raw.get("id", ""),
+            value=raw.get("value", 0),
+            user_id=user.get("id", ""),
+            user_reputation=user.get("reputation", 0),
+            user_ingame_name=user.get("ingame_name", ""),
+            created=_parse_iso(raw.get("created")),
+            updated=_parse_iso(raw.get("updated")),
+        )
+
+
+@dataclass
 class RivenAttribute:
     url_name: str
     value: float
@@ -42,6 +75,7 @@ class Auction:
     re_rolls: int | None
     polarity: str
     attributes: list[RivenAttribute]
+    owner: AuctionOwner
     created: datetime | None
     updated: datetime | None
     url: str
@@ -61,6 +95,13 @@ class Auction:
             for a in raw_attrs
         ]
 
+        owner_raw = raw.get("owner", {})
+        owner = AuctionOwner(
+            id=owner_raw.get("id", ""),
+            reputation=owner_raw.get("reputation", 0),
+            ingame_name=owner_raw.get("ingame_name", ""),
+        )
+
         return cls(
             id=auction_id,
             weapon_url_name=item.get("weapon_url_name", ""),
@@ -74,6 +115,7 @@ class Auction:
             re_rolls=item.get("re_rolls"),
             polarity=item.get("polarity", ""),
             attributes=attributes,
+            owner=owner,
             created=_parse_iso(raw.get("created")),
             updated=_parse_iso(raw.get("updated")),
             url=AUCTION_BASE_URL + auction_id,

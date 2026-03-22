@@ -16,7 +16,7 @@ except ImportError:
         _roll_quality_multiplier,
         compute_similarity, NEGATIVE_QUALITY, _DEFAULT_NEGATIVE_QUALITY,
     )
-    from core.models import Auction, RivenAttribute
+    from core.models import Auction, AuctionOwner, RivenAttribute
 
 from datetime import datetime, timezone
 
@@ -171,6 +171,7 @@ def _make_auction(
         re_rolls=re_rolls,
         polarity="madurai",
         attributes=attributes,
+        owner=AuctionOwner(id="seller1", reputation=5, ingame_name="TestSeller"),
         created=now,
         updated=now,
         url="https://warframe.market/auction/test",

@@ -9,7 +9,12 @@ import RivenTable, {
   type PriceStats,
 } from "@/components/RivenTable";
 import EstimateSheet from "@/components/EstimateSheet";
-import { parseAttributeDisplay, type EstimateResponse } from "@/types/estimate";
+import {
+  parseAttributeDisplay,
+  type EstimateResponse,
+  type AuctionBid,
+  type AuctionBidsResponse,
+} from "@/types/estimate";
 
 const defaultFilters: FilterValues = {
   weaponName: "",
@@ -47,6 +52,9 @@ const Index = () => {
   const [estimateStatus, setEstimateStatus] = useState<Status>("idle");
   const [estimateError, setEstimateError] = useState<string>("");
   const [estimateOpen, setEstimateOpen] = useState(false);
+
+  // Per-session bid cache — in-memory only, cleared on new search.
+  const [bidCache, setBidCache] = useState<Record<string, AuctionBid[]>>({});
 
   // --- Dynamic data from backend cache ---
   const [weapons, setWeapons] = useState<Weapon[]>([]);
@@ -111,6 +119,19 @@ const Index = () => {
   const canEstimate =
     selectedId !== null && status === "success" && filters.weaponName !== "";
 
+  // Fetch bids for the selected auction on row click (pre-warms bid cache).
+  useEffect(() => {
+    if (!selectedId || bidCache[selectedId]) return;
+    const platform = filters.platform;
+    fetch(`/api/auction/${selectedId}/bids?platform=${platform}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject("Failed")))
+      .then((data: AuctionBidsResponse) => {
+        setBidCache((prev) => ({ ...prev, [data.auctionId]: data.bids }));
+      })
+      .catch((err) => console.error("[bids]", err));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
   // handleSearch — fires when the user clicks Search or when crossplay toggles.
   // Resets all result state before the request so stale data is never shown, then
   // serialises the current filter values into query params and calls /api/search.
@@ -118,6 +139,7 @@ const Index = () => {
     setStatus("loading");
     setError("");
     setSelectedId(null);
+    setBidCache({});
     setEstimateOpen(false);
     setEstimateResult(null);
     setEstimateStatus("idle");

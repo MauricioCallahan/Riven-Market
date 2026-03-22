@@ -23,11 +23,32 @@ export interface ComparableAuction {
 
 export interface EstimateData {
   estimatedPrice: number;
+  priceLow: number;
+  priceHigh: number;
   confidence: "high" | "medium" | "low";
+  bidConfidenceTier: 1 | 2 | 3;
   comparableCount: number;
   archetype: string;
   comparables: ComparableAuction[];
   statWeights: Record<string, number>;
+  validatedBidCount: number;
+  auctionsWithBids: number;
+  bidValuesUsed: number[];
+}
+
+/** Bid data for a single auction (from /api/auction/:id/bids). */
+export interface AuctionBid {
+  value: number;
+  userId: string;
+  userReputation: number;
+  userName: string;
+  created: string | null;
+}
+
+export interface AuctionBidsResponse {
+  auctionId: string;
+  bids: AuctionBid[];
+  bidCount: number;
 }
 
 export interface EstimateResponse {

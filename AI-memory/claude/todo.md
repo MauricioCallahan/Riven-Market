@@ -44,6 +44,11 @@
   - **Backend** — Extend `/api/estimate` (or add `/api/estimate/range`) to accept attribute ranges: `positiveAttributes=critical_chance:150:200,multishot:80:120`. Pipeline logic: find auctions where each attribute value falls within [min, max], then run the existing similarity + weighted-average price pipeline on that filtered set. Return the same `PriceEstimate` shape.
   - **Budget signal** — Populate the budget input's placeholder with the estimated price. If the user types a value lower than the estimate, show a subtle amber warning "below market estimate".
   - Commit backend and frontend separately.
+- [ ] **BID-001** Bid-Validated Price Estimator — use bid data from warframe.market as primary price signal.
+  - **Backend** — New `fetch_auction_bids()` in warframe_client, per-session bid cache in auction_service, bid validation engine (`evaluation/bid_validator.py`), `estimate_price_with_bids()` in price_estimator. New endpoint `GET /api/auction/<id>/bids`.
+  - **Tiered confidence** — Tier 1 (2+ validated bids, distinct reputable users), Tier 2 (1 validated bid), Tier 3 (no bids, fallback to IQR-filtered buyout prices).
+  - **Frontend** — Price range display (low–high), tier-specific confidence messaging, bid fetch on row selection, per-session bid cache.
+  - Spec: `bid-validated-pricing-prompt.md`
 - [ ] Mobile-responsive layout — collapsible sidebar/drawer for small screens
 
 ### Price Estimator Accuracy

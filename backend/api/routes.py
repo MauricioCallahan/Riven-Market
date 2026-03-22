@@ -6,7 +6,7 @@ from flask_cors import CORS
 from services import auction_service as rv
 from services import cache_service as cache
 from services.meta_tiers import get_meta_tier
-from evaluation import compute_stats, estimate_price
+from evaluation import compute_stats, estimate_price, estimate_price_with_bids
 from core.models import AttributeInput
 
 logger = logging.getLogger(__name__)
@@ -132,6 +132,29 @@ def riven_attributes():
     })
 
 
+@app.route("/api/auction/<auction_id>/bids", methods=["GET"])
+def auction_bids(auction_id: str):
+    """Fetch bids for a single auction (called on listing selection)."""
+    platform = _str_or_none(request.args.get("platform")) or "pc"
+
+    bids = rv.fetch_bids_for_auction(auction_id, platform)
+
+    return jsonify({
+        "auctionId": auction_id,
+        "bids": [
+            {
+                "value": b.value,
+                "userId": b.user_id,
+                "userReputation": b.user_reputation,
+                "userName": b.user_ingame_name,
+                "created": b.created.isoformat() if b.created else None,
+            }
+            for b in bids
+        ],
+        "bidCount": len(bids),
+    })
+
+
 def _parse_attr_pairs(raw: str) -> list[AttributeInput] | None:
     """Parse 'url_name:value,url_name:value' into a list of AttributeInput.
 
@@ -207,13 +230,25 @@ def estimate():
     disposition = cache.get_disposition(weapon_display)
     meta_multiplier = get_meta_tier(weapon_display)
 
-    # Run the pricing pipeline
-    result = estimate_price(
+    # Identify comparable auctions first, then fetch bids only for those
+    from evaluation.price_estimator import _compute_comparables, _MAX_COMPARABLES
+    scored, _weights, _archetype = _compute_comparables(
+        positive_attrs, negative_attr, re_rolls, auctions, disposition,
+    )
+    scored.sort(key=lambda sr: sr.similarity, reverse=True)
+    comparable_ids = [sr.auction.id for sr in scored[:_MAX_COMPARABLES]]
+
+    # Fetch bids for comparables (cache-aware, rate-limited)
+    bid_data = rv.fetch_bids_for_auctions(comparable_ids, platform)
+
+    # Run bid-validated pricing pipeline
+    result = estimate_price_with_bids(
         positive_attrs=positive_attrs,
         negative_attr=negative_attr,
         re_rolls=re_rolls,
         auctions=auctions,
         disposition=disposition,
+        bid_data=bid_data,
         meta_multiplier=meta_multiplier,
     )
 

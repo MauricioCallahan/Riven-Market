@@ -10,12 +10,16 @@ from datetime import datetime, timezone
 from enum import Enum
 from statistics import quantiles
 
-from core.models import Auction, AttributeInput
+from core.models import Auction, AttributeInput, Bid
 from evaluation.stat_weights import compute_stat_weights, get_effective_price
 from evaluation.archetypes import Archetype, classify_attributes, classify_auction, is_compatible
 from evaluation.similarity import (
     build_stat_vector_from_raw,
     compute_similarity,
+)
+from evaluation.bid_validator import (
+    BidConfidenceTier,
+    BidValidator,
 )
 
 
@@ -73,17 +77,30 @@ class PriceEstimate:
     stat_weights: dict[str, float] = field(default_factory=dict)
     meta_multiplier: float | None = None
     total_auctions: int = 0
+    # Bid-validated fields
+    price_low: float = 0.0
+    price_high: float = 0.0
+    bid_confidence_tier: int = 3
+    validated_bid_count: int = 0
+    auctions_with_bids: int = 0
+    bid_values_used: list[int] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
             "estimatedPrice": round(self.estimated_price, 1),
+            "priceLow": round(self.price_low, 1),
+            "priceHigh": round(self.price_high, 1),
             "confidence": self.confidence,
+            "bidConfidenceTier": self.bid_confidence_tier,
             "comparableCount": self.comparable_count,
             "archetype": self.archetype,
             "comparables": [c.to_dict() for c in self.comparables],
             "statWeights": self.stat_weights,
             "metaMultiplier": self.meta_multiplier,
             "totalAuctions": self.total_auctions,
+            "validatedBidCount": self.validated_bid_count,
+            "auctionsWithBids": self.auctions_with_bids,
+            "bidValuesUsed": self.bid_values_used,
         }
 
 
@@ -164,34 +181,23 @@ def _confidence_level(comparable_count: int, total_auctions: int) -> ConfidenceL
 
 
 # ---------------------------------------------------------------------------
-# Public API
+# Shared comparables computation
 # ---------------------------------------------------------------------------
 
-def estimate_price(
+def _compute_comparables(
     positive_attrs: list[AttributeInput],
     negative_attr: AttributeInput | None,
     re_rolls: int,
     auctions: list[Auction],
     disposition: int,
-    meta_multiplier: float | None = None,
-) -> PriceEstimate:
-    """Main entry point for price estimation.
+) -> tuple[list[SimilarityResult], dict[str, float], Archetype]:
+    """Compute comparable auctions via similarity scoring.
 
-    positive_attrs: [{"url_name": str, "value": float}, ...]
-    negative_attr:  {"url_name": str, "value": float} or None
-
-    Pipeline:
-    1. Compute weapon-aware stat weights from all auctions
-    2. Build target stat vector
-    3. Classify target archetype
-    4. Score each auction by similarity (archetype-filtered)
-    5. Filter by similarity threshold, remove price outliers
-    6. Weighted average price with age downweighting
+    Returns (scored_results, stat_weights, target_archetype).
+    Shared by estimate_price() and estimate_price_with_bids().
     """
-    # 1. Stat weights
     weights = compute_stat_weights(auctions)
 
-    # 2. Target vector
     target_vector = build_stat_vector_from_raw(
         positive_attrs=positive_attrs,
         negative_attr=negative_attr,
@@ -199,12 +205,10 @@ def estimate_price(
         disposition=disposition,
     )
 
-    # 3. Classify target
     target_pos_names = [a.url_name for a in positive_attrs]
     target_archetype = classify_attributes(target_pos_names)
     target_neg_names = {negative_attr.url_name} if negative_attr else set()
 
-    # 4. Score each auction
     scored: list[SimilarityResult] = []
     for auction in auctions:
         candidate_archetype = classify_auction(auction)
@@ -227,10 +231,20 @@ def estimate_price(
                 archetype=candidate_archetype,
             ))
 
-    # 5. Compute price threshold for age-penalty tiering
+    return scored, weights, target_archetype
+
+
+def _weighted_average_price(
+    scored: list[SimilarityResult],
+    auctions: list[Auction],
+) -> tuple[float, list[tuple[float, float, float]]]:
+    """Compute weighted average price from scored comparables.
+
+    Returns (estimated_price, filtered_tuples).
+    filtered_tuples: list of (price, similarity, age_factor) after IQR removal.
+    """
     price_threshold = _compute_price_threshold(auctions)
 
-    # Collect (price, similarity, age_factor) for each comparable
     price_tuples: list[tuple[float, float, float]] = []
     for sr in scored:
         price = get_effective_price(sr.auction)
@@ -239,23 +253,42 @@ def estimate_price(
         af = _age_factor(sr.auction, price, price_threshold)
         price_tuples.append((price, sr.similarity, af))
 
-    # 6. Remove price outliers
     filtered = _remove_outliers(price_tuples)
 
-    # Weighted average: Σ(price × similarity × age_factor) / Σ(similarity × age_factor)
     numerator = sum(p * s * a for p, s, a in filtered)
     denominator = sum(s * a for _, s, a in filtered)
 
-    if denominator == 0:
-        estimated = 0.0
-    else:
-        estimated = numerator / denominator
+    estimated = numerator / denominator if denominator > 0 else 0.0
+    return estimated, filtered
 
-    # Apply meta tier multiplier (Incarnon weapons only)
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+def estimate_price(
+    positive_attrs: list[AttributeInput],
+    negative_attr: AttributeInput | None,
+    re_rolls: int,
+    auctions: list[Auction],
+    disposition: int,
+    meta_multiplier: float | None = None,
+) -> PriceEstimate:
+    """Similarity-based price estimation (no bid data).
+
+    Pipeline:
+    1. Compute comparable auctions via similarity scoring
+    2. Weighted average price with IQR outlier removal and age decay
+    """
+    scored, weights, target_archetype = _compute_comparables(
+        positive_attrs, negative_attr, re_rolls, auctions, disposition,
+    )
+
+    estimated, filtered = _weighted_average_price(scored, auctions)
+
     if meta_multiplier is not None:
         estimated *= meta_multiplier
 
-    # Sort comparables by similarity descending, cap at MAX_COMPARABLES
     scored.sort(key=lambda sr: sr.similarity, reverse=True)
     top_comparables = scored[:_MAX_COMPARABLES]
 
@@ -268,4 +301,95 @@ def estimate_price(
         stat_weights=weights,
         meta_multiplier=meta_multiplier,
         total_auctions=len(auctions),
+    )
+
+
+def estimate_price_with_bids(
+    positive_attrs: list[AttributeInput],
+    negative_attr: AttributeInput | None,
+    re_rolls: int,
+    auctions: list[Auction],
+    disposition: int,
+    bid_data: dict[str, list[Bid]],
+    meta_multiplier: float | None = None,
+) -> PriceEstimate:
+    """Bid-validated price estimation with tiered confidence.
+
+    1. Compute comparable auctions via similarity scoring
+    2. Validate bids for each comparable auction
+    3. Determine confidence tier and price range from validated bids
+    4. Tier 3 fallback: IQR-filtered weighted average from buyout prices
+    """
+    scored, weights, target_archetype = _compute_comparables(
+        positive_attrs, negative_attr, re_rolls, auctions, disposition,
+    )
+
+    # Validate bids for comparable auctions
+    validations = []
+    auctions_with_bids = 0
+    for sr in scored:
+        bids = bid_data.get(sr.auction.id, [])
+        validation = BidValidator.validate_auction_bids(sr.auction, bids)
+        validations.append(validation)
+        if bids:
+            auctions_with_bids += 1
+
+    summary = BidValidator.summarize_validations(validations)
+
+    # Compute fallback price via weighted average (used for Tier 3 and as baseline)
+    fallback_price, filtered = _weighted_average_price(scored, auctions)
+
+    # Determine price range based on tier
+    if summary.overall_tier <= BidConfidenceTier.MEDIUM and summary.bid_values_used:
+        # Tier 1 or 2: bid-derived range
+        price_low = summary.price_low
+        price_high = summary.price_high
+        estimated = (price_low + price_high) / 2.0
+    else:
+        # Tier 3: fallback to IQR bounds from comparable buyout prices
+        estimated = fallback_price
+        if len(filtered) >= 4:
+            prices = sorted(r[0] for r in filtered)
+            q1, _q2, q3 = quantiles(prices, n=4)
+            price_low = q1
+            price_high = q3
+        elif filtered:
+            price_low = min(r[0] for r in filtered)
+            price_high = max(r[0] for r in filtered)
+        else:
+            price_low = 0.0
+            price_high = 0.0
+
+    # Apply meta tier multiplier
+    if meta_multiplier is not None:
+        estimated *= meta_multiplier
+        price_low *= meta_multiplier
+        price_high *= meta_multiplier
+
+    # Map BidConfidenceTier to ConfidenceLevel
+    tier_to_confidence = {
+        BidConfidenceTier.HIGH: ConfidenceLevel.HIGH,
+        BidConfidenceTier.MEDIUM: ConfidenceLevel.MEDIUM,
+        BidConfidenceTier.LOW: ConfidenceLevel.LOW,
+    }
+    confidence = tier_to_confidence[summary.overall_tier]
+
+    scored.sort(key=lambda sr: sr.similarity, reverse=True)
+    top_comparables = scored[:_MAX_COMPARABLES]
+
+    return PriceEstimate(
+        estimated_price=estimated,
+        price_low=price_low,
+        price_high=price_high,
+        confidence=confidence,
+        bid_confidence_tier=int(summary.overall_tier),
+        comparable_count=len(filtered),
+        archetype=target_archetype,
+        comparables=top_comparables,
+        stat_weights=weights,
+        meta_multiplier=meta_multiplier,
+        total_auctions=len(auctions),
+        validated_bid_count=summary.total_validated_bids,
+        auctions_with_bids=auctions_with_bids,
+        bid_values_used=summary.bid_values_used,
     )

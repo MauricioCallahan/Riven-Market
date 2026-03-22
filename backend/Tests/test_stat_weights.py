@@ -12,7 +12,7 @@ except ImportError:
     from evaluation.stat_weights import (
         compute_stat_weights, ELEMENTAL_PREFERENCE, _apply_elemental_preference,
     )
-    from core.models import Auction, RivenAttribute
+    from core.models import Auction, AuctionOwner, RivenAttribute
 
 from datetime import datetime, timezone
 
@@ -44,6 +44,7 @@ def _make_auction(
         re_rolls=0,
         polarity="madurai",
         attributes=attributes,
+        owner=AuctionOwner(id="seller1", reputation=5, ingame_name="TestSeller"),
         created=now,
         updated=now,
         url="https://warframe.market/auction/test",

@@ -35,6 +35,17 @@ def _rate_limited_get(url: str, headers: dict, timeout: int = 10, params: dict |
     return resp  # unreachable, keeps type checker happy
 
 
+def fetch_auction_bids(auction_id: str, platform: str = "pc") -> list[dict]:
+    """Fetch bid history for a single auction. Returns raw bid dicts."""
+    headers = {**API_HEADERS, "Platform": platform, "Language": "en"}
+    response = _rate_limited_get(
+        f"{API_BASE_URL}/auctions/entry/{auction_id}/bids",
+        headers=headers,
+        timeout=10,
+    )
+    return response.json().get("payload", {}).get("bids", [])
+
+
 def search_auctions_raw(params: dict, platform: str = "pc", crossplay: str = "true") -> list[dict]:
     """Call warframe.market auction search. Returns raw auction dicts from the API."""
     headers = {**API_HEADERS, "Platform": platform, "Crossplay": crossplay}

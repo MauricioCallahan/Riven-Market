@@ -1,9 +1,10 @@
 import logging
+import threading
 from typing import Any
 
 from core.config import DROPDOWN_OPTIONS, VALID_PLATFORMS
-from services.warframe_client import search_auctions_raw
-from core.models import Auction
+from services.warframe_client import search_auctions_raw, fetch_auction_bids as _fetch_bids_raw
+from core.models import Auction, Bid
 from evaluation.stats import compute_stats
 from services import cache_service as cache
 from services.search_cache import SearchResultCache
@@ -11,6 +12,15 @@ from services.search_cache import SearchResultCache
 logger = logging.getLogger(__name__)
 
 _search_cache = SearchResultCache()
+
+# ---------------------------------------------------------------------------
+# Per-session bid cache — in-memory only, not persisted.
+# Bids change constantly; stale data from a previous session would mislead
+# the estimator.
+# ---------------------------------------------------------------------------
+
+_bid_cache: dict[str, list[Bid]] = {}
+_bid_cache_lock = threading.Lock()
 
 VALID_SORT_BY = set(DROPDOWN_OPTIONS["sort_by"])
 VALID_BUYOUT_POLICY = set(DROPDOWN_OPTIONS["buyout_policy"])
@@ -235,6 +245,46 @@ def _execute_search(
                 None, True, cached.cached_at,
             )
         return None, ["Request failed. Please try again later."], False, None
+
+
+# ---------------------------------------------------------------------------
+# Bid fetching — per-session cache + warframe.market API
+# ---------------------------------------------------------------------------
+
+def fetch_bids_for_auction(
+    auction_id: str, platform: str = "pc",
+) -> list[Bid]:
+    """Fetch bids for a single auction, using cache if available."""
+    with _bid_cache_lock:
+        cached = _bid_cache.get(auction_id)
+    if cached is not None:
+        return cached
+
+    try:
+        raw_bids = _fetch_bids_raw(auction_id, platform)
+        bids = [Bid.from_api(b) for b in raw_bids]
+    except Exception:
+        logger.warning("Failed to fetch bids for auction %s", auction_id, exc_info=True)
+        bids = []
+
+    with _bid_cache_lock:
+        _bid_cache[auction_id] = bids
+
+    return bids
+
+
+def fetch_bids_for_auctions(
+    auction_ids: list[str], platform: str = "pc",
+) -> dict[str, list[Bid]]:
+    """Fetch bids for multiple auctions, skipping already-cached ones.
+
+    Sequential loop — the rate limiter in warframe_client serializes
+    requests anyway (0.34s spacing), so parallelism would just queue.
+    """
+    result: dict[str, list[Bid]] = {}
+    for auction_id in auction_ids:
+        result[auction_id] = fetch_bids_for_auction(auction_id, platform)
+    return result
 
 
 def fetch_weapon_auctions(
