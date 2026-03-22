@@ -4,6 +4,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from services import auction_service as rv
 from services import cache_service as cache
+from services.meta_tiers import get_meta_tier
 from evaluation import compute_stats, estimate_price
 from core.models import AttributeInput
 
@@ -197,9 +198,10 @@ def estimate():
             f"No auctions found for weapon '{weapon}' on {platform}."
         ]}), 404
 
-    # Look up weapon disposition
-    weapon_display = weapon.replace("_", " ").title()
+    # Look up weapon disposition and meta tier multiplier
+    weapon_display = auctions[0].weapon_display
     disposition = cache.get_disposition(weapon_display)
+    meta_multiplier = get_meta_tier(weapon_display)
 
     # Run the pricing pipeline
     result = estimate_price(
@@ -208,6 +210,7 @@ def estimate():
         re_rolls=re_rolls,
         auctions=auctions,
         disposition=disposition,
+        meta_multiplier=meta_multiplier,
     )
 
     # Also include basic market stats for context

@@ -68,6 +68,7 @@ class PriceEstimate:
     archetype: Archetype
     comparables: list[SimilarityResult] = field(default_factory=list)
     stat_weights: dict[str, float] = field(default_factory=dict)
+    meta_multiplier: float | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -77,6 +78,7 @@ class PriceEstimate:
             "archetype": self.archetype,
             "comparables": [c.to_dict() for c in self.comparables],
             "statWeights": self.stat_weights,
+            "metaMultiplier": self.meta_multiplier,
         }
 
 
@@ -162,6 +164,7 @@ def estimate_price(
     re_rolls: int,
     auctions: list[Auction],
     disposition: int,
+    meta_multiplier: float | None = None,
 ) -> PriceEstimate:
     """Main entry point for price estimation.
 
@@ -239,6 +242,10 @@ def estimate_price(
     else:
         estimated = numerator / denominator
 
+    # Apply meta tier multiplier (Incarnon weapons only)
+    if meta_multiplier is not None:
+        estimated *= meta_multiplier
+
     # Sort comparables by similarity descending, cap at MAX_COMPARABLES
     scored.sort(key=lambda sr: sr.similarity, reverse=True)
     top_comparables = scored[:_MAX_COMPARABLES]
@@ -250,4 +257,5 @@ def estimate_price(
         archetype=target_archetype,
         comparables=top_comparables,
         stat_weights=weights,
+        meta_multiplier=meta_multiplier,
     )

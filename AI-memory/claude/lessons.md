@@ -2,7 +2,7 @@
 
 ## ⚖️ GLOBAL RULES
 - **Commit Formatting**: Never include `Co-Authored-By` lines; use `type(scope): description`.
-- **Task Intent**: The "todo" prefix in a user prompt means "add to `todo.md` only"—do not implement code.
+- **Task Intent**: The "todo" prefix in a user prompt means "add to `todo.md` only"—do not implement code, do not explore test patterns, do not plan. Just write the entry.
 - **Environment**: Always verify available tools (e.g., `pip list`) and package paths before running scripts.
 - **Documentation**: Update `lessons.md` and `todo.md` immediately after any correction or task completion.
 - **Protocol**: → See CLAUDE.md § SESSION PROTOCOL.

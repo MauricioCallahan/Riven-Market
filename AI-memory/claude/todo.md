@@ -38,6 +38,10 @@
 - [x] **VAL-001** Enforce `mastery_rank_min = 8` floor on the mastery rank input — rivens require MR 8 minimum. Clamp or show a validation error in both frontend and backend `validate_filters()`.
 - [ ] **VAL-002** Validate that `mastery_rank_min <= mastery_rank_max` when both are set — no cross-field check exists. Add to both frontend (disable/warn when min > max) and backend `validate_filters()`.
 
+### Frontend Reliability
+
+- [ ] **TEST-001** `parseAttributeDisplay` in `frontend/src/types/estimate.ts` needs extensive unit tests — if it silently fails, `/api/estimate` is never called (handleEstimate bails on empty `positiveParsed`). Edge cases: multi-word stat names, negative values, zero values, malformed/missing `%`, extra whitespace.
+
 ### Backend Reliability
 
 - [ ] **RELY-004** Structured logging — replace all `print()` with Python `logging` module.
