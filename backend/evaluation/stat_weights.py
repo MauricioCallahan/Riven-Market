@@ -10,13 +10,33 @@ Falls back to equal weights when fewer than 15 auctions are available.
 
 from core.models import Auction
 
+# Meta-driven elemental preference multipliers.
+# Applied after frequency-based weights to nudge toward current meta.
+ELEMENTAL_PREFERENCE: dict[str, float] = {
+    "toxin_damage":    1.25,   # Viral (Toxin+Cold) is dominant meta
+    "heat_damage":     1.15,   # armor strip procs
+    "cold_damage":     1.00,   # useful for Viral combo but not standalone
+    "electric_damage": 1.00,   # niche (Corrosive combos)
+}
+
+
+def _apply_elemental_preference(weights: dict[str, float]) -> dict[str, float]:
+    """Boost elemental stat weights by meta preference, then re-normalize."""
+    for name in weights:
+        if name in ELEMENTAL_PREFERENCE:
+            weights[name] *= ELEMENTAL_PREFERENCE[name]
+    total = sum(weights.values())
+    if total > 0:
+        weights = {k: v / total for k, v in weights.items()}
+    return weights
+
 
 def _equal_weights(stat_names: set[str]) -> dict[str, float]:
     """Fallback: equal weight for every stat seen."""
     if not stat_names:
         return {}
     w = 1.0 / len(stat_names)
-    return {name: w for name in stat_names}
+    return _apply_elemental_preference({name: w for name in stat_names})
 
 
 class StatWeights:
@@ -81,7 +101,7 @@ class StatWeights:
         for name in all_stats:
             weights[name] = freq.get(name, 0) / total
 
-        return weights
+        return _apply_elemental_preference(weights)
 
 
 # Module-level aliases for backward-compatible imports
