@@ -242,7 +242,7 @@ export default function RivenTable({
       {stats && stats.count > 0 && (
         <div className="flex items-center gap-6 px-4 py-1.5 border-t border-border bg-muted/50 text-xs">
           {stats.count === 500 ? (
-            <span className="text-amber-400 font-medium">
+            <span className="text-warning font-medium">
               500+ auctions (results capped — narrow filters)
             </span>
           ) : (

@@ -37,6 +37,11 @@ export default {
         "row-selected": "hsl(var(--row-selected))",
         "stat-positive": "hsl(var(--stat-positive))",
         "stat-negative": "hsl(var(--stat-negative))",
+        warning: "hsl(var(--warning))",
+        "chart-line-1": "hsl(var(--chart-line-1))",
+        "chart-line-2": "hsl(var(--chart-line-2))",
+        "chart-line-3": "hsl(var(--chart-line-3))",
+        "chart-volume": "hsl(var(--chart-volume))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -95,8 +100,8 @@ export default {
           "50%": { opacity: "1" },
         },
         "data-flash": {
-          "0%": { color: "hsl(263 80% 75%)" },
-          "100%": { color: "hsl(0 0% 95%)" },
+          "0%": { color: "hsl(var(--accent))" },
+          "100%": { color: "hsl(var(--foreground))" },
         },
       },
       animation: {

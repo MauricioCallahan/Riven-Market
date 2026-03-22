@@ -36,9 +36,9 @@ interface EstimateSheetProps {
 }
 
 const confidenceColor: Record<string, string> = {
-  high: "bg-green-500/15 text-green-400 border-green-500/30",
-  medium: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
-  low: "bg-red-500/15 text-red-400 border-red-500/30",
+  high: "bg-stat-positive/15 text-stat-positive border-stat-positive/30",
+  medium: "bg-warning/15 text-warning border-warning/30",
+  low: "bg-destructive/15 text-destructive border-destructive/30",
 };
 
 const confidenceTooltip: Record<string, string> = {
@@ -48,9 +48,9 @@ const confidenceTooltip: Record<string, string> = {
 };
 
 const archetypeColor: Record<string, string> = {
-  crit: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  status: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  hybrid: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  crit: "bg-primary/15 text-primary border-primary/30",
+  status: "bg-warning/15 text-warning border-warning/30",
+  hybrid: "bg-accent/15 text-accent border-accent/30",
   other: "",
 };
 

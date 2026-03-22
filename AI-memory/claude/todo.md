@@ -10,18 +10,6 @@
 
 ### Price Estimator (EstimateSheet)
 
-- [x] **CHART-001** Add a stock-like price range chart to the estimator or search results to visualize average/high/low pricing.
-  - Display a candlestick or range bar chart (e.g. using recharts) showing `low`, `average`, and `high` platinum prices for the searched riven.
-  - Data source: the price stats already returned by `/api/estimate` (or `/api/search` `stats` field — `min`, `median`, `mean`, `max`, `q1`, `q3`).
-  - Placement: inside `EstimateSheet.tsx` below the Market Overview section, or as a collapsible panel in the search results area.
-  - Use recharts `ComposedChart` with a `Bar` for the low→high range and a `Line` or `ReferenceLine` for the average/median. No new dependencies needed — recharts is already installed.
-  - Keep it read-only and presentational; no interactivity required beyond a tooltip on hover showing exact values.
-
-
-
-- [x] **UI-003** In `EstimateSheet.tsx` Stat Weights section, filter out stats with 0% weight before rendering — add `.filter(([, weight]) => weight > 0)` before the `.sort()` at line 148. Zero-weight stats contribute nothing to the estimate and clutter the UI.
-- [x] **UI-004** In `EstimateSheet.tsx` Market Overview section: (1) remove the `<StatItem label="Start Bid" ...>` row entirely; (2) for Buyout and TopBid, only show the median value — remove the min/max (Q1/Q4) flanks. Update `StatItem` or render inline so only median is displayed for those two fields.
-- [x] **UI-005** In `EstimateSheet.tsx`, wrap the confidence `<Badge>` in a `<Tooltip>` that explains the rating on hover. Tooltip text: **High** — 10+ comparable listings found; **Medium** — 5–9 comparables; **Low** — fewer than 5 comparables. Confidence is determined by `_confidence_level()` in `backend/evaluation/price_estimator.py`. Use the existing shadcn/ui `Tooltip`/`TooltipProvider`/`TooltipContent` components.
 - [ ] **UI-006** In `EstimateSheet.tsx`, give the archetype `<Badge>` a color per build type (like confidence), and wrap it in a `<Tooltip>` explaining what it means on hover.
   - Color map (add `archetypeColor` alongside `confidenceColor`): **crit** → blue, **status** → orange/amber, **hybrid** → purple, **other** → default/muted.
   - Tooltip descriptions: **Crit** — focuses on critical chance/damage stats; **Status** — focuses on status chance and elemental damage; **Hybrid** — mix of crit and status stats; **Other** — utility or raw damage build.
@@ -29,14 +17,10 @@
 
 ### Table & Search
 
-- [x] **UI-001** When auction results hit the 500-result cap, show a "Showing 500 of X total" indicator. The backend already limits results; this just surfaces the truncation so users know to narrow filters.
 - [ ] **UI-002** Remove buyout price, starting bid, and top bid columns from RivenTable — these will be surfaced inside the price estimator feature instead.
 - [ ] **SORT-001** Implement pos/neg attribute sorting client-side — `sort_by: positive_attr_asc/desc` is not supported by the warframe.market API (returns 500). Rank auctions locally by top percentile value among positive attributes (penalize by negative attribute percentiles). Requires attribute stat data (min/max/avg per attribute).
 
 ### Validation
-
-- [x] **VAL-001** Enforce `mastery_rank_min = 8` floor on the mastery rank input — rivens require MR 8 minimum. Clamp or show a validation error in both frontend and backend `validate_filters()`.
-- [x] **VAL-002** Validate that `mastery_rank_min <= mastery_rank_max` when both are set — backend check already existed; added frontend inline warning in FilterSidebar + backend test.
 
 ### Frontend Reliability
 
@@ -44,26 +28,6 @@
 
 ### Backend Reliability
 
-- [x] **RELY-004** Structured logging — replaced all `print()` in production backend code with `logging` module. `main.py` already had `logging.basicConfig` with `LOG_LEVEL` env var (default changed to INFO). Added per-request log line in routes.py. Test files retain `print()` for diagnostics.
-- [x] **CACHE-001** Add result-level search cache to backend for warframe.market outage fallback.
-  - **cache.py** — Add `SearchResultCache` class (or extend existing singleton). File-based JSON in `cache/search_results/`. TTL: 24h. No Flask imports. Methods: `get(key) -> dict | None`, `set(key, params, auctions)`. Write must be non-blocking (background thread or fire-and-forget).
-  - **rivens.py** — After params are validated/built, generate a deterministic SHA256 cache key from sorted params. Happy path: call API → write result cache in background → return fresh data with `stale: false, cached_at: null`. Failure path: attempt cache lookup → if hit and within TTL, return with `stale: true, cached_at: <ISO>` → if miss, re-raise 502 as before. No retries in rivens.py — that stays in api_client.py.
-  - **server.py** — Ensure `/api/search` response always includes `stale` (bool, default false) and `cached_at` (ISO string or null) — stable shape regardless of code path.
-  - **Cache key format**: `sha256(json.dumps(sorted_params, sort_keys=True))` where params include weapon, attributes, platform, sort, filters. Normalize before hashing (strip None values, sort lists).
-- [x] **RELY-001** Request deduplication — identical concurrent searches collapse into a single warframe.market API call.
-  - In `cache.py`, maintain a `dict[str, threading.Event]` of in-flight keys. Before dispatching an API call, check if the same key is already in-flight; if so, wait on the Event and return the stored result. On completion, store result, set Event, clean up entry.
-  - Use the same cache key format as CACHE-001 (SHA256 of sorted params).
-  - Must not block unrelated searches — only deduplicates identical concurrent ones.
-  - No new module-level singletons — attach state to the existing cache singleton.
-  - Commit separately.
-- [x] **RELY-002** Pricing confidence signal — add `sample_size` and `confidence` to evaluation output.
-  - In the `evaluation/` module (not `server.py`), compute `sample_size: int` and `confidence: "low" | "medium" | "high"` alongside existing price stats. Thresholds as constants: low < 5, medium 5–15, high > 15.
-  - Bubble both fields up through `rivens.py` and into the `/api/search` response shape.
-  - Fields must always be present (never absent), defaulting to `sample_size: 0, confidence: "low"` on empty results.
-  - No Flask imports in the evaluation module.
-  - Commit separately.
-- [x] **RELY-003** Disposition staleness detection — surface stale disposition data in the search response.
-  - In `cache.py`, record a `last_updated: datetime` timestamp whenever disposition data is successfully refreshed from warframestat.us.
   - Expose `cache.get_disposition_age() -> timedelta | None`.
   - Add `disposition_stale: bool` to `/api/search` response — `true` if disposition data is older than 7 days or unavailable. Informational only; never block searches.
   - Field must always be present in response.
@@ -72,8 +36,6 @@
 - [ ] **EVAL-006** Verify price estimate calculation excludes Q1/Q4 — double-check that the similarity scoring and weighted-average pricing pipeline in `backend/evaluation/` uses only median (Q2) for buyout/topbid data, not Q1 or Q4 range boundaries. Confirm `price_estimator.py` and `similarity.py` don't reference percentile quartiles in weighted calculations. Related to UI-004 which hides Q1/Q4 display.
 
 ### Backend / API
-
-- [x] **API-001** Investigate `buyout_policy: with_bid` — currently removed from dropdown because it returns 400, but bidding auctions are a real warframe.market feature. Determine the correct API parameter/value and re-add support once confirmed working.
 
 ## Planned (Larger Features)
 
@@ -86,10 +48,6 @@
 
 ### Price Estimator Accuracy
 
-- [x] **EVAL-001** Graduated negative stat scoring — replaced flat ±0.05/0.10 with per-stat `NEGATIVE_QUALITY` dict in `similarity.py`. 16 stats scored from +0.08 (zoom) to −0.15 (crit_chance).
-- [x] **EVAL-002** Elemental stat differentiation — applied meta-driven multipliers (Toxin 1.25×, Heat 1.15×, Cold/Electric 1.0×) to frequency-based stat weights in `stat_weights.py`, then re-normalized.
-- [x] **EVAL-003** Roll quality multiplier — piecewise linear 0.7–1.1× multiplier in `similarity.py` based on average `normalize_roll()` of positive stats. 50% roll = neutral (1.0×).
-- [x] **EVAL-004** Weapon demand / listing volume signal — `_confidence_level()` in `price_estimator.py` now factors total auction volume (can only lower confidence). Added `total_auctions` field to `PriceEstimate`.
 - [ ] **EVAL-005** 0-reroll meta weapon pricing — for S-tier weapons (from `overframe_tiers.json`) with 0 rerolls, bypass similarity pipeline and price based on other 0-reroll auctions for the same weapon. Additional Incarnon bonus if weapon is in `incarnon_weapons.json`. warframe.market API supports `re_rolls_min=0, re_rolls_max=0` filtering natively.
 - [ ] **EVAL-005-RECHECK** Verify 0-reroll riven math — recheck the calculation logic, edge cases, and weighting for 0-reroll weapon pricing against actual market data.
 
@@ -128,4 +86,40 @@
 - [x] Commit and push to origin/main
 - [x] **GIT-001** Add `pytest` test coverage for `validate_filters`, `normalize_filters`, `_int_or_none`, `_parse_attr_pairs` — see edge case matrix from security review
 - [x] Enable stricter TypeScript config (incremental: `strict`, `noImplicitAny`, `strictNullChecks`)
-
+- [x] **EVAL-001** Graduated negative stat scoring — replaced flat ±0.05/0.10 with per-stat `NEGATIVE_QUALITY` dict in `similarity.py`. 16 stats scored from +0.08 (zoom) to −0.15 (crit_chance).
+- [x] **EVAL-002** Elemental stat differentiation — applied meta-driven multipliers (Toxin 1.25×, Heat 1.15×, Cold/Electric 1.0×) to frequency-based stat weights in `stat_weights.py`, then re-normalized.
+- [x] **EVAL-003** Roll quality multiplier — piecewise linear 0.7–1.1× multiplier in `similarity.py` based on average `normalize_roll()` of positive stats. 50% roll = neutral (1.0×).
+- [x] **EVAL-004** Weapon demand / listing volume signal — `_confidence_level()` in `price_estimator.py` now factors total auction volume (can only lower confidence). Added `total_auctions` field to `PriceEstimate`.
+- [x] **API-001** Investigate `buyout_policy: with_bid` — currently removed from dropdown because it returns 400, but bidding auctions are a real warframe.market feature. Determine the correct API parameter/value and re-add support once confirmed working.
+- [x] **RELY-004** Structured logging — replaced all `print()` in production backend code with `logging` module. `main.py` already had `logging.basicConfig` with `LOG_LEVEL` env var (default changed to INFO). Added per-request log line in routes.py. Test files retain `print()` for diagnostics.
+- [x] **CACHE-001** Add result-level search cache to backend for warframe.market outage fallback.
+  - **cache.py** — Add `SearchResultCache` class (or extend existing singleton). File-based JSON in `cache/search_results/`. TTL: 24h. No Flask imports. Methods: `get(key) -> dict | None`, `set(key, params, auctions)`. Write must be non-blocking (background thread or fire-and-forget).
+  - **rivens.py** — After params are validated/built, generate a deterministic SHA256 cache key from sorted params. Happy path: call API → write result cache in background → return fresh data with `stale: false, cached_at: null`. Failure path: attempt cache lookup → if hit and within TTL, return with `stale: true, cached_at: <ISO>` → if miss, re-raise 502 as before. No retries in rivens.py — that stays in api_client.py.
+  - **server.py** — Ensure `/api/search` response always includes `stale` (bool, default false) and `cached_at` (ISO string or null) — stable shape regardless of code path.
+  - **Cache key format**: `sha256(json.dumps(sorted_params, sort_keys=True))` where params include weapon, attributes, platform, sort, filters. Normalize before hashing (strip None values, sort lists).
+- [x] **RELY-001** Request deduplication — identical concurrent searches collapse into a single warframe.market API call.
+  - In `cache.py`, maintain a `dict[str, threading.Event]` of in-flight keys. Before dispatching an API call, check if the same key is already in-flight; if so, wait on the Event and return the stored result. On completion, store result, set Event, clean up entry.
+  - Use the same cache key format as CACHE-001 (SHA256 of sorted params).
+  - Must not block unrelated searches — only deduplicates identical concurrent ones.
+  - No new module-level singletons — attach state to the existing cache singleton.
+  - Commit separately.
+- [x] **RELY-002** Pricing confidence signal — add `sample_size` and `confidence` to evaluation output.
+  - In the `evaluation/` module (not `server.py`), compute `sample_size: int` and `confidence: "low" | "medium" | "high"` alongside existing price stats. Thresholds as constants: low < 5, medium 5–15, high > 15.
+  - Bubble both fields up through `rivens.py` and into the `/api/search` response shape.
+  - Fields must always be present (never absent), defaulting to `sample_size: 0, confidence: "low"` on empty results.
+  - No Flask imports in the evaluation module.
+  - Commit separately.
+- [x] **RELY-003** Disposition staleness detection — surface stale disposition data in the search response.
+  - In `cache.py`, record a `last_updated: datetime` timestamp whenever disposition data is successfully refreshed from warframestat.us.
+  [x] **VAL-001** Enforce `mastery_rank_min = 8` floor on the mastery rank input — rivens require MR 8 minimum. Clamp or show a validation error in both frontend and backend `validate_filters()`.
+- [x] **VAL-002** Validate that `mastery_rank_min <= mastery_rank_max` when both are set — backend check already existed; added frontend inline warning in FilterSidebar + backend test.
+- [x] **UI-001** When auction results hit the 500-result cap, show a "Showing 500 of X total" indicator. The backend already limits results; this just surfaces the truncation so users know to narrow filters.
+- [x] **UI-003** In `EstimateSheet.tsx` Stat Weights section, filter out stats with 0% weight before rendering — add `.filter(([, weight]) => weight > 0)` before the `.sort()` at line 148. Zero-weight stats contribute nothing to the estimate and clutter the UI.
+- [x] **UI-004** In `EstimateSheet.tsx` Market Overview section: (1) remove the `<StatItem label="Start Bid" ...>` row entirely; (2) for Buyout and TopBid, only show the median value — remove the min/max (Q1/Q4) flanks. Update `StatItem` or render inline so only median is displayed for those two fields.
+- [x] **UI-005** In `EstimateSheet.tsx`, wrap the confidence `<Badge>` in a `<Tooltip>` that explains the rating on hover. Tooltip text: **High** — 10+ comparable listings found; **Medium** — 5–9 comparables; **Low** — fewer than 5 comparables. Confidence is determined by `_confidence_level()` in `backend/evaluation/price_estimator.py`. Use the existing shadcn/ui `Tooltip`/`TooltipProvider`/`TooltipContent` components.
+- [x] **CHART-001** Add a stock-like price range chart to the estimator or search results to visualize average/high/low pricing.
+  - Display a candlestick or range bar chart (e.g. using recharts) showing `low`, `average`, and `high` platinum prices for the searched riven.
+  - Data source: the price stats already returned by `/api/estimate` (or `/api/search` `stats` field — `min`, `median`, `mean`, `max`, `q1`, `q3`).
+  - Placement: inside `EstimateSheet.tsx` below the Market Overview section, or as a collapsible panel in the search results area.
+  - Use recharts `ComposedChart` with a `Bar` for the low→high range and a `Line` or `ReferenceLine` for the average/median. No new dependencies needed — recharts is already installed.
+  - Keep it read-only and presentational; no interactivity required beyond a tooltip on hover showing exact values.

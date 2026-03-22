@@ -76,7 +76,7 @@ function FilterField({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-xs font-medium uppercase tracking-wider text-[#E6EdF3]">
+      <label className="text-xs font-medium uppercase tracking-wider text-foreground">
         {label}
       </label>
       {children}
@@ -85,13 +85,13 @@ function FilterField({
 }
 
 const inputClass =
-  "h-9 w-full rounded-md border border-input bg-[#0D1117] px-3 text-sm text-white placeholder:text-[#8B949E] transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background";
+  "h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-white placeholder:text-muted-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background";
 
 const selectClass =
-  "h-9 w-full rounded-md border border-input bg-[#0D1117] px-3 text-sm text-[#E6EdF3] transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background appearance-none cursor-pointer";
+  "h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background appearance-none cursor-pointer";
 
 const comboTriggerClass =
-  "h-9 w-full rounded-md border border-input bg-[#0D1117] px-3 text-sm text-[#E6EdF3] flex items-center justify-between cursor-pointer transition-colors hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background";
+  "h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground flex items-center justify-between cursor-pointer transition-colors hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background";
 
 // --- Weapon Combobox ---
 
@@ -123,7 +123,7 @@ function WeaponCombobox({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button type="button" className={comboTriggerClass}>
-          <span className={selected ? "" : "text-[#8B949E]"}>
+          <span className={selected ? "" : "text-muted-foreground"}>
             {selected ? selected.item_name : "Select weapon..."}
           </span>
           <ChevronDown size={14} className="shrink-0 opacity-50" />
@@ -192,7 +192,7 @@ function AttributeCombobox({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button type="button" className={comboTriggerClass}>
-          <span className={selected ? "" : "text-[#8B949E]"}>
+          <span className={selected ? "" : "text-muted-foreground"}>
             {selected ? selected.effect : placeholder}
           </span>
           <div className="flex items-center gap-1 shrink-0">
@@ -286,7 +286,7 @@ function AttributeMultiSelect({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button type="button" className={comboTriggerClass}>
-            <span className="text-[#8B949E]">
+            <span className="text-muted-foreground">
               {values.length === 0
                 ? "Select attributes..."
                 : `${values.length}/${max} selected`}
@@ -393,13 +393,13 @@ export default function FilterSidebar({
 
   return (
     <aside
-      className="w-[260px] min-w-[260px] h-screen flex flex-col bg-[#0D1117] border-r border-border"
+      className="w-[260px] min-w-[260px] h-screen flex flex-col bg-background border-r border-border"
       style={{
         boxShadow: "0 0 0 1px rgba(0,0,0,.05), 0 1px 3px 0 rgba(0,0,0,.03)",
       }}
     >
       <div className="p-4 border-b border-border flex items-center justify-between">
-        <h2 className="text-lg font-medium tracking-tight text-[#E6EdF3]">
+        <h2 className="text-lg font-medium tracking-tight text-foreground">
           Filters
         </h2>
         <button
@@ -431,7 +431,7 @@ export default function FilterSidebar({
         </FilterField>
 
         <div className="flex items-center justify-between">
-          <label className="text-xs font-medium uppercase tracking-wider text-[#E6EdF3]">
+          <label className="text-xs font-medium uppercase tracking-wider text-foreground">
             Crossplay
           </label>
           <Switch
@@ -439,7 +439,7 @@ export default function FilterSidebar({
             onCheckedChange={(checked) =>
               onChange({ ...filters, crossplay: checked ? "true" : "false" })
             }
-            className="data-[state=unchecked]:bg-[#D50000] data-[state=checked]:bg-[#00C853] [&>span]:bg-[#0D1117]"
+            className="data-[state=unchecked]:bg-destructive data-[state=checked]:bg-stat-positive [&>span]:bg-background"
           />
         </div>
 
@@ -500,7 +500,7 @@ export default function FilterSidebar({
             onChange={set("mrMax")}
           />
           {filters.mrMin && filters.mrMax && parseInt(filters.mrMin) > parseInt(filters.mrMax) && (
-            <p className="text-xs text-red-400 mt-1">Min cannot exceed max</p>
+            <p className="text-xs text-destructive mt-1">Min cannot exceed max</p>
           )}
         </FilterField>
 
@@ -596,7 +596,7 @@ export default function FilterSidebar({
         <button
           onClick={onSearch}
           disabled={isLoading}
-          className="h-12 w-full rounded-md bg-[#161B22] text-[#1F6FEB] font-medium text-sm flex items-center justify-center gap-2 transition-colors hover:bg-[#161B22]/80 active:scale-[0.98] disabled:opacity-60"
+          className="h-12 w-full rounded-md bg-card text-primary font-medium text-sm flex items-center justify-center gap-2 transition-colors hover:bg-card/80 active:scale-[0.98] disabled:opacity-60"
         >
           <Search size={18} />
           Search
