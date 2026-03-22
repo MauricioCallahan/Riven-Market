@@ -19,11 +19,13 @@ from core.config import API_HEADERS, API_BASE_URL, WARFRAMESTAT_WEAPONS_URL
 from services.warframe_client import _rate_limited_get
 CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".cache")
 CACHE_TTL = timedelta(hours=24)
+DISPOSITION_STALE_THRESHOLD = timedelta(days=7)
 
 # In-memory cache (populated from disk on startup, refreshed periodically)
 _weapons: list[dict] | None = None
 _attributes: list[dict] | None = None
 _disposition_map: dict[str, int] | None = None
+_disposition_fetched_at: datetime | None = None
 _weapons_lock = threading.Lock()
 _attributes_lock = threading.Lock()
 _dispositions_lock = threading.Lock()
@@ -156,11 +158,14 @@ def _refresh_cache(
     setter: Callable[[list[dict]], None],
 ) -> None:
     """Fetch fresh data and update both disk and in-memory cache."""
+    global _disposition_fetched_at
     try:
         data = fetch_fn()
         _write_disk_cache(name, data)
         with mem_lock:
             setter(data)
+        if name == "dispositions":
+            _disposition_fetched_at = datetime.now(timezone.utc)
         print(f"[cache] Refreshed {name} — {len(data)} entries")
     except Exception as e:
         print(f"[cache] Failed to refresh {name}: {e}")
@@ -202,11 +207,14 @@ _CACHE_ENTRIES = [
 
 def init_cache():
     """Load cache from disk on startup. Refresh stale entries in background."""
+    global _disposition_fetched_at
     for name, fetch_fn, lock, setter in _CACHE_ENTRIES:
         data, fetched_at = _read_disk_cache(name)
         if data is not None:
             with lock:
                 setter(data)
+            if name == "dispositions":
+                _disposition_fetched_at = fetched_at
             print(f"[cache] Loaded {len(data)} {name} from disk cache")
 
         if _is_stale(fetched_at):
@@ -262,6 +270,22 @@ def get_disposition(weapon_name: str) -> int:
         return 3
     lookup_name = _NAME_OVERRIDES.get(weapon_name, weapon_name).lower()
     return dispo_map.get(lookup_name, 3)
+
+
+def get_disposition_age() -> timedelta | None:
+    """Return the age of the disposition data, or None if unavailable."""
+    if _disposition_fetched_at is None:
+        return None
+    fetched = _disposition_fetched_at
+    if fetched.tzinfo is None:
+        fetched = fetched.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - fetched
+
+
+def is_disposition_stale() -> bool:
+    """True if disposition data is older than 7 days or unavailable."""
+    age = get_disposition_age()
+    return age is None or age > DISPOSITION_STALE_THRESHOLD
 
 
 def get_attributes() -> list[dict] | None:

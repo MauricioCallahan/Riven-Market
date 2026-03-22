@@ -265,4 +265,5 @@ def search_auctions(filters: dict[str, Any]) -> tuple[dict[str, Any] | None, lis
         "stats": stats.to_dict(),
         "stale": stale,
         "cached_at": cached_at,
+        "disposition_stale": cache.is_disposition_stale(),
     }, None
