@@ -22,7 +22,7 @@
 - [x] **UI-003** In `EstimateSheet.tsx` Stat Weights section, filter out stats with 0% weight before rendering — add `.filter(([, weight]) => weight > 0)` before the `.sort()` at line 148. Zero-weight stats contribute nothing to the estimate and clutter the UI.
 - [x] **UI-004** In `EstimateSheet.tsx` Market Overview section: (1) remove the `<StatItem label="Start Bid" ...>` row entirely; (2) for Buyout and TopBid, only show the median value — remove the min/max (Q1/Q4) flanks. Update `StatItem` or render inline so only median is displayed for those two fields.
 - [x] **UI-005** In `EstimateSheet.tsx`, wrap the confidence `<Badge>` in a `<Tooltip>` that explains the rating on hover. Tooltip text: **High** — 10+ comparable listings found; **Medium** — 5–9 comparables; **Low** — fewer than 5 comparables. Confidence is determined by `_confidence_level()` in `backend/evaluation/price_estimator.py`. Use the existing shadcn/ui `Tooltip`/`TooltipProvider`/`TooltipContent` components.
-- [x] **UI-006** In `EstimateSheet.tsx`, give the archetype `<Badge>` a color per build type (like confidence), and wrap it in a `<Tooltip>` explaining what it means on hover.
+- [ ] **UI-006** In `EstimateSheet.tsx`, give the archetype `<Badge>` a color per build type (like confidence), and wrap it in a `<Tooltip>` explaining what it means on hover.
   - Color map (add `archetypeColor` alongside `confidenceColor`): **crit** → blue, **status** → orange/amber, **hybrid** → purple, **other** → default/muted.
   - Tooltip descriptions: **Crit** — focuses on critical chance/damage stats; **Status** — focuses on status chance and elemental damage; **Hybrid** — mix of crit and status stats; **Other** — utility or raw damage build.
   - Archetypes come from `backend/evaluation/archetypes.py`. Use shadcn/ui `Tooltip`/`TooltipProvider`/`TooltipContent`.
@@ -73,7 +73,7 @@
 
 ### Backend / API
 
-- [ ] **API-001** Investigate `buyout_policy: with_bid` — currently removed from dropdown because it returns 400, but bidding auctions are a real warframe.market feature. Determine the correct API parameter/value and re-add support once confirmed working.
+- [x] **API-001** Investigate `buyout_policy: with_bid` — currently removed from dropdown because it returns 400, but bidding auctions are a real warframe.market feature. Determine the correct API parameter/value and re-add support once confirmed working.
 
 ## Planned (Larger Features)
 
