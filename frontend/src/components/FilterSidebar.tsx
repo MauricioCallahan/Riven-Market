@@ -566,7 +566,7 @@ export default function FilterSidebar({
             >
               <option value="">All</option>
               <option value="direct">Direct Buy</option>
-              <option value="with_bid">With Bidding</option>
+              <option value="auction">Bidding Auction</option>
             </select>
             <SelectChevron />
           </div>
