@@ -188,6 +188,46 @@ def _reroll_penalty(target_rerolls: int, candidate_rerolls: int) -> float:
 
 
 # ---------------------------------------------------------------------------
+# Roll quality multiplier
+# ---------------------------------------------------------------------------
+
+def _roll_quality_multiplier(auction: Auction, disposition: int) -> float:
+    """0.7–1.1× multiplier based on auction's positive roll quality.
+
+    Piecewise linear: [0.0→0.7, 0.5→1.0, 1.0→1.1].
+    Low rolls penalized aggressively; high rolls modestly boosted.
+    A typical mid-roll (50%) is neutral (1.0×).
+    """
+    pos_attrs = auction.positive_attributes
+    if not pos_attrs:
+        return 1.0
+
+    num_pos = len(pos_attrs)
+    has_neg = len(auction.negative_attributes) > 0
+
+    norms: list[float] = []
+    for attr in pos_attrs:
+        n = normalize_roll(
+            url_name=attr.url_name,
+            actual_value=attr.value,
+            disposition=disposition,
+            num_positives=num_pos,
+            has_negative=has_neg,
+            is_positive_stat=True,
+        )
+        norms.append(min(n, 1.0))  # cap at 1.0 for rounding edge cases
+
+    avg_roll = sum(norms) / len(norms)
+
+    # Piecewise linear mapping:
+    #   [0.0, 0.5] → [0.7, 1.0]  (slope 0.6 — aggressive penalty for low rolls)
+    #   [0.5, 1.0] → [1.0, 1.1]  (slope 0.2 — modest boost for high rolls)
+    if avg_roll <= 0.5:
+        return 0.7 + avg_roll * 0.6
+    return 1.0 + (avg_roll - 0.5) * 0.2
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -231,7 +271,10 @@ def compute_similarity(
     # Reroll penalty
     reroll_mult = _reroll_penalty(target_rerolls, auction.re_rolls or 0)
 
+    # Roll quality multiplier
+    roll_mult = _roll_quality_multiplier(auction, disposition)
+
     # Combined score
-    adjusted = (cos_sim + neg_adj) * reroll_mult
+    adjusted = (cos_sim + neg_adj) * reroll_mult * roll_mult
 
     return max(0.0, adjusted)  # floor at 0

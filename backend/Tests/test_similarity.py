@@ -6,12 +6,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 try:
     from backend.evaluation.similarity import (
         _negative_adjustment, _cosine_similarity, _reroll_penalty,
+        _roll_quality_multiplier,
         compute_similarity, NEGATIVE_QUALITY, _DEFAULT_NEGATIVE_QUALITY,
     )
     from backend.core.models import Auction, RivenAttribute
 except ImportError:
     from evaluation.similarity import (
         _negative_adjustment, _cosine_similarity, _reroll_penalty,
+        _roll_quality_multiplier,
         compute_similarity, NEGATIVE_QUALITY, _DEFAULT_NEGATIVE_QUALITY,
     )
     from core.models import Auction, RivenAttribute
@@ -225,3 +227,70 @@ class TestComputeSimilarityWithNegatives:
         # -damage candidate-only is penalized → lower
         assert sim_none >= sim_zoom  # zoom clamped, no bonus
         assert sim_none > sim_damage  # damage penalized
+
+
+# ---------------------------------------------------------------------------
+# _roll_quality_multiplier unit tests
+# ---------------------------------------------------------------------------
+
+class TestRollQualityMultiplier:
+    """Tests for the piecewise linear roll quality multiplier (0.7–1.1×).
+
+    Reference: critical_chance at dispo=3, 2 positives, no negative → max = 150.0
+    So value=150 → 100% roll, value=75 → 50% roll, value=15 → 10% roll.
+    """
+
+    def test_max_roll_gives_boost(self):
+        """~100% rolls → multiplier ≈ 1.1."""
+        auction = _make_auction(
+            pos_attrs=[("critical_chance", 150.0), ("critical_damage", 120.0)],
+            neg_attrs=[],
+        )
+        mult = _roll_quality_multiplier(auction, disposition=3)
+        assert 1.08 < mult <= 1.1
+
+    def test_min_roll_gives_penalty(self):
+        """~10% rolls → multiplier ≈ 0.76."""
+        auction = _make_auction(
+            pos_attrs=[("critical_chance", 15.0), ("critical_damage", 12.0)],
+            neg_attrs=[],
+        )
+        mult = _roll_quality_multiplier(auction, disposition=3)
+        assert 0.7 < mult < 0.8
+
+    def test_mid_roll_is_neutral(self):
+        """50% rolls → multiplier = 1.0."""
+        auction = _make_auction(
+            pos_attrs=[("critical_chance", 75.0), ("critical_damage", 60.0)],
+            neg_attrs=[],
+        )
+        mult = _roll_quality_multiplier(auction, disposition=3)
+        assert abs(mult - 1.0) < 0.02
+
+    def test_no_positive_attrs_returns_neutral(self):
+        """Edge case: no positive attributes → 1.0."""
+        auction = _make_auction(
+            pos_attrs=[],
+            neg_attrs=[("zoom", -30.0)],
+        )
+        mult = _roll_quality_multiplier(auction, disposition=3)
+        assert mult == 1.0
+
+    def test_high_roll_scores_higher_than_low_roll(self):
+        """Integration: same stat types, different magnitudes → higher sim for better rolls."""
+        weights = {"critical_chance": 0.5, "critical_damage": 0.5}
+        target_vector = {"critical_chance": 0.5, "critical_damage": 0.5}
+
+        auction_high = _make_auction(
+            pos_attrs=[("critical_chance", 140.0), ("critical_damage", 110.0)],
+            neg_attrs=[],
+        )
+        auction_low = _make_auction(
+            pos_attrs=[("critical_chance", 30.0), ("critical_damage", 25.0)],
+            neg_attrs=[],
+        )
+
+        sim_high = compute_similarity(target_vector, set(), 0, auction_high, weights, 3)
+        sim_low = compute_similarity(target_vector, set(), 0, auction_low, weights, 3)
+
+        assert sim_high > sim_low
