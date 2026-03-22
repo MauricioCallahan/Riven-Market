@@ -38,6 +38,9 @@ _MAX_COMPARABLES = 20
 # Age decay divisor for standard vs high-value listings
 _AGE_DECAY_STANDARD = 30.0    # 30d → 0.5× weight
 _AGE_DECAY_HIGH_VALUE = 120.0  # 120d → 0.5× weight (expensive rivens have smaller buyer pool)
+# Volume thresholds for demand-aware confidence
+_VOLUME_HIGH = 40      # >= 40 total auctions = healthy market
+_VOLUME_MEDIUM = 15    # 15–39 = adequate
 
 
 # ---------------------------------------------------------------------------
@@ -69,6 +72,7 @@ class PriceEstimate:
     comparables: list[SimilarityResult] = field(default_factory=list)
     stat_weights: dict[str, float] = field(default_factory=dict)
     meta_multiplier: float | None = None
+    total_auctions: int = 0
 
     def to_dict(self) -> dict:
         return {
@@ -79,6 +83,7 @@ class PriceEstimate:
             "comparables": [c.to_dict() for c in self.comparables],
             "statWeights": self.stat_weights,
             "metaMultiplier": self.meta_multiplier,
+            "totalAuctions": self.total_auctions,
         }
 
 
@@ -145,11 +150,15 @@ def _remove_outliers(
     return [r for r in results if lower <= r[0] <= upper]
 
 
-def _confidence_level(count: int) -> ConfidenceLevel:
-    """Determine confidence based on number of comparables."""
-    if count >= 10:
+def _confidence_level(comparable_count: int, total_auctions: int) -> ConfidenceLevel:
+    """Determine confidence from comparables and market volume.
+
+    Volume can only LOWER confidence, never raise it.
+    Even with many comparables, a thin market suggests niche weapon.
+    """
+    if comparable_count >= 10 and total_auctions >= _VOLUME_HIGH:
         return ConfidenceLevel.HIGH
-    if count >= 5:
+    if comparable_count >= 5 and total_auctions >= _VOLUME_MEDIUM:
         return ConfidenceLevel.MEDIUM
     return ConfidenceLevel.LOW
 
@@ -252,10 +261,11 @@ def estimate_price(
 
     return PriceEstimate(
         estimated_price=estimated,
-        confidence=_confidence_level(len(filtered)),
+        confidence=_confidence_level(len(filtered), len(auctions)),
         comparable_count=len(filtered),
         archetype=target_archetype,
         comparables=top_comparables,
         stat_weights=weights,
         meta_multiplier=meta_multiplier,
+        total_auctions=len(auctions),
     )
