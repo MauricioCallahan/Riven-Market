@@ -1,14 +1,16 @@
 import logging
 from typing import Any
-from urllib.parse import urlencode
 
-from core.config import API_BASE_URL, DROPDOWN_OPTIONS, VALID_PLATFORMS
+from core.config import DROPDOWN_OPTIONS, VALID_PLATFORMS
 from services.warframe_client import search_auctions_raw
 from core.models import Auction
 from evaluation.stats import compute_stats
 from services import cache_service as cache
+from services.search_cache import SearchResultCache
 
 logger = logging.getLogger(__name__)
+
+_search_cache = SearchResultCache()
 
 VALID_SORT_BY = set(DROPDOWN_OPTIONS["sort_by"])
 VALID_BUYOUT_POLICY = set(DROPDOWN_OPTIONS["buyout_policy"])
@@ -178,15 +180,17 @@ def build_params(filters: dict[str, Any]) -> dict[str, Any]:
 # Search — orchestrate the full search pipeline
 # ---------------------------------------------------------------------------
 
-def _execute_search(filters: dict) -> tuple[list[Auction] | None, list[str] | None]:
+def _execute_search(
+    filters: dict,
+) -> tuple[list[Auction] | None, list[str] | None, bool, str | None]:
     """Shared pipeline: normalize → validate → build params → call API → parse.
 
-    Returns (auctions, None) on success or (None, errors) on failure.
+    Returns (auctions, errors, stale, cached_at).
     """
     filters = normalize_filters(filters)
     errors = validate_filters(filters)
     if errors:
-        return None, errors
+        return None, errors, False, None
 
     params = build_params(filters)
     logger.debug("Search params: %s", params)
@@ -194,13 +198,27 @@ def _execute_search(filters: dict) -> tuple[list[Auction] | None, list[str] | No
     platform = filters.get("platform", "pc")
     crossplay = "false" if filters.get("crossplay") == "false" else "true"
 
+    # Build cache key from all search-relevant params
+    cache_key_params = {**params, "_platform": platform, "_crossplay": crossplay}
+    cache_key = SearchResultCache.build_cache_key(cache_key_params)
+
     try:
         raw = search_auctions_raw(params, platform, crossplay)
+        _search_cache.set(cache_key, raw)
+        return [Auction.from_api(a) for a in raw], None, False, None
     except Exception as e:
         logger.error("Upstream API request failed: %s", e, exc_info=True)
-        return None, ["Request failed. Please try again later."]
-
-    return [Auction.from_api(a) for a in raw], None
+        # Fallback: serve stale cached result
+        cached = _search_cache.get(cache_key)
+        if cached:
+            logger.info("Serving stale cached result for key %s", cache_key[:12])
+            return (
+                [Auction.from_api(a) for a in cached.auctions],
+                None,
+                True,
+                cached.cached_at,
+            )
+        return None, ["Request failed. Please try again later."], False, None
 
 
 def fetch_weapon_auctions(
@@ -210,17 +228,18 @@ def fetch_weapon_auctions(
     sort_by: str = "price_desc",
 ) -> tuple[list[Auction] | None, list[str] | None]:
     """Fetch all auctions for a weapon. No stat filters applied."""
-    return _execute_search({
+    auctions, errors, _stale, _cached_at = _execute_search({
         "weapon_url_name": weapon_url_name,
         "sort_by": sort_by,
         "platform": platform,
         "crossplay": crossplay,
     })
+    return auctions, errors
 
 
 def search_auctions(filters: dict[str, Any]) -> tuple[dict[str, Any] | None, list[str] | None]:
     """Main entry point: search + compute stats + format for frontend."""
-    auctions, errors = _execute_search(filters)
+    auctions, errors, stale, cached_at = _execute_search(filters)
     if errors:
         return None, errors
 
@@ -228,4 +247,6 @@ def search_auctions(filters: dict[str, Any]) -> tuple[dict[str, Any] | None, lis
     return {
         "auctions": [a.to_frontend_dict() for a in auctions],
         "stats": stats.to_dict(),
+        "stale": stale,
+        "cached_at": cached_at,
     }, None
