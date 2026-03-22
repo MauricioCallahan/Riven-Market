@@ -19,3 +19,4 @@
 | 2026-03-17 | Ran test script directly without verifying imports    | Use `python -m package.module` for internal scripts |
 | 2026-03-17 | Assumed `pytest` was available without checking       | Verify tools before assuming availability |
 | 2026-03-17 | Didn't update todo.md after completing a task         | Mark tasks complete in todo.md immediately |
+| 2026-03-22 | Read/explored todo.md when "todo" prefix was used     | "todo" prefix = add to todo.md ONLY, never read/explore the file first |

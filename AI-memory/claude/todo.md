@@ -91,6 +91,7 @@
 - [x] **EVAL-003** Roll quality multiplier — piecewise linear 0.7–1.1× multiplier in `similarity.py` based on average `normalize_roll()` of positive stats. 50% roll = neutral (1.0×).
 - [x] **EVAL-004** Weapon demand / listing volume signal — `_confidence_level()` in `price_estimator.py` now factors total auction volume (can only lower confidence). Added `total_auctions` field to `PriceEstimate`.
 - [ ] **EVAL-005** 0-reroll meta weapon pricing — for S-tier weapons (from `overframe_tiers.json`) with 0 rerolls, bypass similarity pipeline and price based on other 0-reroll auctions for the same weapon. Additional Incarnon bonus if weapon is in `incarnon_weapons.json`. warframe.market API supports `re_rolls_min=0, re_rolls_max=0` filtering natively.
+- [ ] **EVAL-005-RECHECK** Verify 0-reroll riven math — recheck the calculation logic, edge cases, and weighting for 0-reroll weapon pricing against actual market data.
 
 ## Long-Term Additions
 
