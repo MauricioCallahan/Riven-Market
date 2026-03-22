@@ -10,6 +10,7 @@ can populate dropdowns without hitting the API on every page load.
 """
 
 import json
+import logging
 import os
 import threading
 import requests
@@ -17,6 +18,8 @@ from datetime import datetime, timezone, timedelta
 from typing import Callable
 from core.config import API_HEADERS, API_BASE_URL, WARFRAMESTAT_WEAPONS_URL
 from services.warframe_client import _rate_limited_get
+
+logger = logging.getLogger(__name__)
 CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".cache")
 CACHE_TTL = timedelta(hours=24)
 DISPOSITION_STALE_THRESHOLD = timedelta(days=7)
@@ -166,9 +169,9 @@ def _refresh_cache(
             setter(data)
         if name == "dispositions":
             _disposition_fetched_at = datetime.now(timezone.utc)
-        print(f"[cache] Refreshed {name} — {len(data)} entries")
+        logger.info("Refreshed %s — %d entries", name, len(data))
     except Exception as e:
-        print(f"[cache] Failed to refresh {name}: {e}")
+        logger.error("Failed to refresh %s: %s", name, e)
 
 
 def _set_weapons(data: list[dict]) -> None:
@@ -188,7 +191,7 @@ def _set_attributes(data: list[dict]) -> None:
     url_names = {a["url_name"] for a in data if not a.get("search_only", False)}
     warnings = validate_base_stats(url_names)
     for w in warnings:
-        print(f"[cache] WARNING: {w}")
+        logger.warning("%s", w)
 
 
 def _set_dispositions(data: list[dict]) -> None:
@@ -215,10 +218,10 @@ def init_cache():
                 setter(data)
             if name == "dispositions":
                 _disposition_fetched_at = fetched_at
-            print(f"[cache] Loaded {len(data)} {name} from disk cache")
+            logger.info("Loaded %d %s from disk cache", len(data), name)
 
         if _is_stale(fetched_at):
-            print(f"[cache] {name.capitalize()} cache is stale — refreshing in background")
+            logger.info("%s cache is stale — refreshing in background", name.capitalize())
             threading.Thread(
                 target=_refresh_cache,
                 args=(name, fetch_fn, lock, setter),
@@ -254,9 +257,9 @@ def get_weapons() -> list[dict] | None:
             unmatched.append(item_name)
 
     if unmatched and len(unmatched) <= 20:
-        print(f"[cache] Weapons with no disposition match (defaulting to 3): {unmatched}")
+        logger.warning("Weapons with no disposition match (defaulting to 3): %s", unmatched)
     elif unmatched:
-        print(f"[cache] {len(unmatched)} weapons with no disposition match (defaulting to 3)")
+        logger.warning("%d weapons with no disposition match (defaulting to 3)", len(unmatched))
 
     _merged_weapons = result
     return result

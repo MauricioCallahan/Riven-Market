@@ -476,12 +476,12 @@ def get_weapon_tier(weapon_name: str) -> WeaponTier | None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="%(levelname)s %(name)s: %(message)s")
-    print("Running full meta tier refresh...")
+    logger.info("Running full meta tier refresh...")
     _full_refresh()
-    print("\nResults:")
+    logger.info("Results:")
     with _lock:
         if _meta_tiers:
             for name, wt in sorted(_meta_tiers.items()):
-                print(f"  {name:25s}  {wt.tier.value}-tier  ×{wt.multiplier}")
+                logger.info("  %s  %s-tier  x%s", f"{name:25s}", wt.tier.value, wt.multiplier)
         else:
-            print("  No tiers built.")
+            logger.info("  No tiers built.")

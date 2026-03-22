@@ -1,7 +1,10 @@
+import logging
 import time
 import threading
 import requests
 from core.config import API_HEADERS, API_BASE_URL
+
+logger = logging.getLogger(__name__)
 
 # Shared rate-limit state — governs ALL warframe.market HTTP calls (cache + search)
 _rate_lock = threading.Lock()
@@ -23,7 +26,7 @@ def _rate_limited_get(url: str, headers: dict, timeout: int = 10, params: dict |
         resp = requests.get(url, headers=headers, timeout=timeout, params=params)
         if resp.status_code == 429:
             wait = float(resp.headers.get("Retry-After", 2 * (attempt + 1)))
-            print(f"[api] 429 rate-limited, retrying in {wait}s (attempt {attempt + 1}/{max_retries})")
+            logger.warning("429 rate-limited, retrying in %ss (attempt %d/%d)", wait, attempt + 1, max_retries)
             time.sleep(wait)
             continue
         resp.raise_for_status()
