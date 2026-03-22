@@ -1,7 +1,14 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from enum import Enum
 from functools import cached_property
 from core.config import AUCTION_BASE_URL
+
+
+class Confidence(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
 
 
 @dataclass
@@ -118,6 +125,8 @@ class PriceStats:
     buyout: FieldStats | None
     start_bid: FieldStats | None
     top_bid: FieldStats | None
+    sample_size: int = 0
+    confidence: Confidence = Confidence.LOW
 
     def to_dict(self) -> dict:
         return {
@@ -125,6 +134,8 @@ class PriceStats:
             "buyout": self.buyout.to_dict() if self.buyout else None,
             "startBid": self.start_bid.to_dict() if self.start_bid else None,
             "topBid": self.top_bid.to_dict() if self.top_bid else None,
+            "sampleSize": self.sample_size,
+            "confidence": self.confidence.value,
         }
 
 
