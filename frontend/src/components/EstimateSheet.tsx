@@ -1,5 +1,14 @@
 import { ExternalLink } from "lucide-react";
 import {
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip as ReTooltip,
+  ResponsiveContainer,
+} from "recharts";
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -8,6 +17,11 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import type { EstimateResponse, ComparableAuction } from "@/types/estimate";
 import type { FieldStats, PriceStats } from "@/components/RivenTable";
 
@@ -27,6 +41,26 @@ const confidenceColor: Record<string, string> = {
   low: "bg-red-500/15 text-red-400 border-red-500/30",
 };
 
+const confidenceTooltip: Record<string, string> = {
+  high: "10+ comparable listings found",
+  medium: "5–9 comparable listings found",
+  low: "Fewer than 5 comparable listings found",
+};
+
+const archetypeColor: Record<string, string> = {
+  crit: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  status: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  hybrid: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  other: "",
+};
+
+const archetypeTooltip: Record<string, string> = {
+  crit: "Focuses on critical chance and critical damage stats",
+  status: "Focuses on status chance and elemental damage",
+  hybrid: "Mix of critical and status stats",
+  other: "Utility or raw damage build",
+};
+
 function formatPrice(n: number) {
   return "~" + Math.round(n).toLocaleString() + "p";
 }
@@ -39,9 +73,11 @@ function formatNum(n: number | null) {
 function StatItem({
   label,
   field,
+  medianOnly = false,
 }: {
   label: string;
   field: FieldStats | null;
+  medianOnly?: boolean;
 }) {
   if (!field) return null;
   return (
@@ -49,11 +85,15 @@ function StatItem({
       <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
         {label}
       </span>
-      <span className="text-xs">
-        {formatNum(field.min)} /{" "}
-        <span className="font-medium">{formatNum(field.median)}</span> /{" "}
-        {formatNum(field.max)}
-      </span>
+      {medianOnly ? (
+        <span className="text-xs font-medium">{formatNum(field.median)}</span>
+      ) : (
+        <span className="text-xs">
+          {formatNum(field.min)} /{" "}
+          <span className="font-medium">{formatNum(field.median)}</span> /{" "}
+          {formatNum(field.max)}
+        </span>
+      )}
     </div>
   );
 }
@@ -121,15 +161,32 @@ export default function EstimateSheet({
                 </span>
               )}
               <div className="flex items-center gap-2">
-                <Badge
-                  variant="outline"
-                  className={confidenceColor[estimate.confidence] ?? ""}
-                >
-                  {estimate.confidence} confidence
-                </Badge>
-                <Badge variant="secondary" className="capitalize">
-                  {estimate.archetype}
-                </Badge>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className={confidenceColor[estimate.confidence] ?? ""}
+                    >
+                      {estimate.confidence} confidence
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {confidenceTooltip[estimate.confidence]}
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className={`capitalize ${archetypeColor[estimate.archetype] ?? ""}`}
+                    >
+                      {estimate.archetype}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {archetypeTooltip[estimate.archetype] ?? "Build type"}
+                  </TooltipContent>
+                </Tooltip>
               </div>
               <span className="text-xs text-muted-foreground">
                 Based on {estimate.comparableCount} comparable listing
@@ -145,6 +202,7 @@ export default function EstimateSheet({
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(estimate.statWeights)
+                    .filter(([, weight]) => weight > 0)
                     .sort(([, a], [, b]) => b - a)
                     .map(([stat, weight]) => (
                       <span
@@ -164,21 +222,45 @@ export default function EstimateSheet({
             )}
 
             {/* Market Stats */}
-            {stats && stats.count > 0 && (
-              <div className="flex flex-col gap-1.5">
-                <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Market Overview ({stats.count} auctions)
-                </h3>
-                <div className="flex items-center justify-around rounded-md border border-border bg-muted/30 py-2">
-                  <StatItem label="Buyout" field={stats.buyout} />
-                  <StatItem label="Start Bid" field={stats.startBid} />
-                  <StatItem label="Top Bid" field={stats.topBid} />
+            {stats && stats.count > 0 && (() => {
+              const chartData = [
+                stats.buyout && { name: "Buyout", low: stats.buyout.min, range: stats.buyout.max - stats.buyout.min, median: stats.buyout.median },
+                stats.topBid && { name: "Top Bid", low: stats.topBid.min, range: stats.topBid.max - stats.topBid.min, median: stats.topBid.median },
+              ].filter(Boolean) as { name: string; low: number; range: number; median: number }[];
+              return (
+                <div className="flex flex-col gap-1.5">
+                  <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Market Overview ({stats.count} auctions)
+                  </h3>
+                  <div className="flex items-center justify-around rounded-md border border-border bg-muted/30 py-2">
+                    <StatItem label="Buyout" field={stats.buyout} medianOnly />
+                    <StatItem label="Top Bid" field={stats.topBid} medianOnly />
+                  </div>
+                  {chartData.length > 0 && (
+                    <div className="rounded-md border border-border bg-muted/30 pt-2 pb-1">
+                      <ResponsiveContainer width="100%" height={90}>
+                        <ComposedChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: 16 }} stackOffset="none">
+                          <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                          <YAxis hide />
+                          <ReTooltip
+                            formatter={(value: number, name: string) => {
+                              if (name === "low") return [`${value}p`, "Min"];
+                              if (name === "range") return [`${value}p`, "Range (min→max)"];
+                              if (name === "median") return [`${value}p`, "Median"];
+                              return [value, name];
+                            }}
+                            contentStyle={{ fontSize: 11 }}
+                          />
+                          <Bar dataKey="low" stackId="range" fill="transparent" isAnimationActive={false} />
+                          <Bar dataKey="range" stackId="range" fill="hsl(var(--muted-foreground))" opacity={0.3} radius={[3, 3, 3, 3]} isAnimationActive={false} />
+                          <Line dataKey="median" dot={{ r: 4, fill: "hsl(var(--primary))" }} stroke="hsl(var(--primary))" strokeWidth={2} isAnimationActive={false} />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
                 </div>
-                <span className="text-[10px] text-muted-foreground text-center">
-                  min / median / max
-                </span>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Comparables Table */}
             <div className="flex flex-col gap-1.5">
