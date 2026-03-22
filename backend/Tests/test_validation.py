@@ -184,6 +184,9 @@ def test_validate_filters_bounds_mr():
     check_validate_filters({"weapon_url_name": "x", "mastery_rank_max": 0}, "Mastery rank maximum must be between 1 and 16")
     check_validate_filters({"weapon_url_name": "x", "mastery_rank_max": 17}, "Mastery rank maximum must be between 1 and 16")
 
+    # Cross-field: min > max
+    check_validate_filters({"weapon_url_name": "x", "mastery_rank_min": 12, "mastery_rank_max": 9}, "cannot exceed maximum")
+
 def test_validate_filters_bounds_rerolls():
     check_validate_filters({"weapon_url_name": "x", "re_rolls_min": -1}, "Re-rolls minimum must be at least 0")
     check_validate_filters({"weapon_url_name": "x", "re_rolls_max": -1}, "Re-rolls maximum must be at least 0")
