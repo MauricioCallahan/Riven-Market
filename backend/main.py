@@ -8,7 +8,7 @@ from services.meta_tiers import init as init_meta_tiers
 
 def main():
     load_dotenv()
-    log_level = os.environ.get("LOG_LEVEL", "WARNING").upper()
+    log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
     logging.basicConfig(level=log_level, format="%(levelname)s %(name)s: %(message)s")
     # Load cached weapon/attribute data from disk (refreshes from API if stale).
     cache.init_cache()

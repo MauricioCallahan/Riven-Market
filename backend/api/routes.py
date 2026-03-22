@@ -1,3 +1,4 @@
+import logging
 import math
 
 from flask import Flask, jsonify, request
@@ -7,6 +8,8 @@ from services import cache_service as cache
 from services.meta_tiers import get_meta_tier
 from evaluation import compute_stats, estimate_price
 from core.models import AttributeInput
+
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:8080"])  # Allow React frontend to access API
@@ -81,9 +84,10 @@ def search():
     result, errors = rv.search_auctions(filters)
 
     if errors:
-        # Return validation/API errors so the frontend can display them
+        logger.info("GET /api/search weapon=%s status=400", filters.get("weapon_url_name"))
         return jsonify({"errors": errors}), 400
 
+    logger.info("GET /api/search weapon=%s status=200", filters.get("weapon_url_name"))
     return jsonify(result)
 
 

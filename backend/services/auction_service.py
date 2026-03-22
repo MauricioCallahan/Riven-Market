@@ -89,8 +89,8 @@ def validate_filters(filters: dict[str, Any]) -> list[str]:
     # --- Mastery rank ---
     if mr_min is not None and (mr_min < 8 or mr_min > 16):
         errors.append(f"Mastery rank minimum must be between 8 and 16 (rivens require MR 8; got {mr_min}).")
-    if mr_max is not None and (mr_max < 1 or mr_max > 16):
-        errors.append(f"Mastery rank maximum must be between 1 and 16 (got {mr_max}).")
+    if mr_max is not None and (mr_max < 8 or mr_max > 16):
+        errors.append(f"Mastery rank maximum must be between 8 and 16 (rivens require MR 8; got {mr_max}).")
     if mr_min is not None and mr_max is not None and mr_min > mr_max:
         errors.append(f"Mastery rank minimum ({mr_min}) cannot exceed maximum ({mr_max}).")
 

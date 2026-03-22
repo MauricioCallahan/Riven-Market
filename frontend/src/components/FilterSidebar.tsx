@@ -493,7 +493,7 @@ export default function FilterSidebar({
           <input
             className={inputClass}
             type="number"
-            min={1}
+            min={8}
             max={16}
             placeholder="16"
             value={filters.mrMax}

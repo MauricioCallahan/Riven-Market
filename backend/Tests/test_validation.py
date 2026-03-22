@@ -180,9 +180,9 @@ def test_validate_filters_bounds_mr():
     check_validate_filters({"weapon_url_name": "x", "mastery_rank_min": 7}, "Mastery rank minimum must be between 8 and 16")
     check_validate_filters({"weapon_url_name": "x", "mastery_rank_min": 17}, "Mastery rank minimum must be between 8 and 16")
 
-    # Max bounds
-    check_validate_filters({"weapon_url_name": "x", "mastery_rank_max": 0}, "Mastery rank maximum must be between 1 and 16")
-    check_validate_filters({"weapon_url_name": "x", "mastery_rank_max": 17}, "Mastery rank maximum must be between 1 and 16")
+    # Max bounds — floor is 8 (rivens require MR 8)
+    check_validate_filters({"weapon_url_name": "x", "mastery_rank_max": 7}, "Mastery rank maximum must be between 8 and 16")
+    check_validate_filters({"weapon_url_name": "x", "mastery_rank_max": 17}, "Mastery rank maximum must be between 8 and 16")
 
     # Cross-field: min > max
     check_validate_filters({"weapon_url_name": "x", "mastery_rank_min": 12, "mastery_rank_max": 9}, "cannot exceed maximum")
