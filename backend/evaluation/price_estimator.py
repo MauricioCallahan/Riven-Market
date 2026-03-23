@@ -346,14 +346,11 @@ def estimate_price_with_bids(
         price_high = summary.price_high
         estimated = (price_low + price_high) / 2.0
     else:
-        # Tier 3: fallback to IQR bounds from comparable buyout prices
+        # Tier 3: fallback to min/max of IQR-filtered comparable prices.
+        # _remove_outliers() already cleaned the set using a Tukey fence, so
+        # min/max are safe bounds with no Q1/Q4 quartile boundaries in the estimate.
         estimated = fallback_price
-        if len(filtered) >= 4:
-            prices = sorted(r[0] for r in filtered)
-            q1, _q2, q3 = quantiles(prices, n=4)
-            price_low = q1
-            price_high = q3
-        elif filtered:
+        if filtered:
             price_low = min(r[0] for r in filtered)
             price_high = max(r[0] for r in filtered)
         else:
