@@ -19,7 +19,7 @@
 ### Table & Search
 
 - [ ] **UI-002** Remove buyout price, starting bid, and top bid columns from RivenTable — these will be surfaced inside the price estimator feature instead.
-- [ ] **SORT-001** Implement pos/neg attribute sorting client-side — `sort_by: positive_attr_asc/desc` is not supported by the warframe.market API (returns 500). Rank auctions locally by top percentile value among positive attributes (penalize by negative attribute percentiles). Requires attribute stat data (min/max/avg per attribute).
+- [x] **SORT-001** Implement pos/neg attribute sorting client-side — `sort_by: positive_attr_asc/desc` is not supported by the warframe.market API (returns 500). Rank auctions locally by top percentile value among positive attributes (penalize by negative attribute percentiles). Requires attribute stat data (min/max/avg per attribute).
 
 ### Validation
 
