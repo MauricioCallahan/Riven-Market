@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Search, X, ChevronDown, Check, Calculator } from "lucide-react";
+import { Search, X, ChevronDown, Check, Calculator, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -63,6 +63,8 @@ interface FilterSidebarProps {
   negativeAttrs: RivenAttribute[];
   onEstimate: () => void;
   canEstimate: boolean;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
 // --- Shared styles ---
@@ -374,6 +376,8 @@ export default function FilterSidebar({
   negativeAttrs,
   onEstimate,
   canEstimate,
+  collapsed,
+  onToggleCollapse,
 }: FilterSidebarProps) {
   const set =
     (key: keyof FilterValues) =>
@@ -393,24 +397,47 @@ export default function FilterSidebar({
 
   return (
     <aside
-      className="w-[260px] min-w-[260px] h-screen flex flex-col bg-background border-r border-border"
+      className={`${collapsed ? "w-10 min-w-[40px]" : "w-[260px] min-w-[260px]"} h-screen flex flex-col bg-background border-r border-border transition-[width] duration-300 ease-in-out overflow-hidden`}
       style={{
         boxShadow: "0 0 0 1px rgba(0,0,0,.05), 0 1px 3px 0 rgba(0,0,0,.03)",
       }}
     >
+      {collapsed ? (
+        <div className="flex items-center justify-center py-[18px] border-b border-border">
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            aria-label="Expand sidebar"
+          >
+            <PanelLeftOpen size={16} />
+          </button>
+        </div>
+      ) : (
+        <>
       <div className="p-4 border-b border-border flex items-center justify-between">
         <h2 className="text-lg font-medium tracking-tight text-foreground">
           Filters
         </h2>
-        <button
-          type="button"
-          onClick={onEstimate}
-          disabled={!canEstimate}
-          className="h-7 px-2.5 rounded-md border border-input bg-background text-xs font-medium text-foreground inline-flex items-center gap-1.5 transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:pointer-events-none"
-        >
-          <Calculator size={14} />
-          Estimate
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={onEstimate}
+            disabled={!canEstimate}
+            className="h-7 px-2.5 rounded-md border border-input bg-background text-xs font-medium text-foreground inline-flex items-center gap-1.5 transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <Calculator size={14} />
+            Estimate
+          </button>
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            aria-label="Collapse sidebar"
+          >
+            <PanelLeftClose size={16} />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
@@ -602,6 +629,8 @@ export default function FilterSidebar({
           Search
         </button>
       </div>
+        </>
+      )}
     </aside>
   );
 }

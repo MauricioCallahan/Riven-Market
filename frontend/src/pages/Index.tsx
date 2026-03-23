@@ -56,6 +56,9 @@ const Index = () => {
   // Per-session bid cache — in-memory only, cleared on new search.
   const [bidCache, setBidCache] = useState<Record<string, AuctionBid[]>>({});
 
+  // Sidebar collapse state — controls whether FilterSidebar renders as a slim rail.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   // --- Dynamic data from backend cache ---
   const [weapons, setWeapons] = useState<Weapon[]>([]);
   const [allPositiveAttrs, setAllPositiveAttrs] = useState<RivenAttribute[]>(
@@ -278,6 +281,8 @@ const Index = () => {
         negativeAttrs={filteredNegativeAttrs}
         onEstimate={handleEstimate}
         canEstimate={canEstimate}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
       />
       <RivenTable
         rows={rows}
