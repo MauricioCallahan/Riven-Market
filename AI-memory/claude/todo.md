@@ -35,7 +35,7 @@
   - Field must always be present in response.
   - Commit separately.
 - [ ] **PERF-001** Cache auction search results in `/api/estimate` (short TTL ~60s, keyed by weapon+platform+crossplay) — currently makes a live upstream call on every request.
-- [ ] **EVAL-006** Verify price estimate calculation excludes Q1/Q4 — double-check that the similarity scoring and weighted-average pricing pipeline in `backend/evaluation/` uses only median (Q2) for buyout/topbid data, not Q1 or Q4 range boundaries. Confirm `price_estimator.py` and `similarity.py` don't reference percentile quartiles in weighted calculations. Related to UI-004 which hides Q1/Q4 display.
+- [x] **EVAL-006** Verify price estimate calculation excludes Q1/Q4 — double-check that the similarity scoring and weighted-average pricing pipeline in `backend/evaluation/` uses only median (Q2) for buyout/topbid data, not Q1 or Q4 range boundaries. Confirm `price_estimator.py` and `similarity.py` don't reference percentile quartiles in weighted calculations. Related to UI-004 which hides Q1/Q4 display.
 
 ### Backend / API
 
