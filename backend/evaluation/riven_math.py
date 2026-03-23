@@ -10,6 +10,12 @@ any specific riven configuration.
 Source: Warframe Wiki riven stat range tables.
 """
 
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from core.models import Auction
+
 
 # ---------------------------------------------------------------------------
 # Base stat table — max positive roll at dispo 3, 2 positive stats, no neg
@@ -146,6 +152,75 @@ def normalize_roll(
         return 0.0
 
     return abs(actual_value) / max_val
+
+
+# ---------------------------------------------------------------------------
+# Negative stat quality scores
+# ---------------------------------------------------------------------------
+
+# Per-stat adjustment for negative attributes.
+# Positive = desirable negative (good for score), negative = harmful.
+NEGATIVE_QUALITY: dict[str, float] = {
+    # Desirable negatives (positive adjustment)
+    "zoom":                          +0.08,
+    "recoil":                        +0.06,
+    "puncture_damage":               +0.05,
+    "impact_damage":                 +0.05,
+    "finisher_damage":               +0.04,
+    "chance_to_gain_combo_count":    +0.03,
+    # Neutral negatives
+    "ammo_maximum":                  +0.02,
+    "status_duration":               +0.01,
+    "magazine_capacity":              0.00,
+    "projectile_speed":               0.00,
+    "reload_speed":                  -0.02,
+    # Undesirable negatives (penalty)
+    "fire_rate_/_attack_speed":      -0.06,
+    "status_chance":                 -0.08,
+    "base_damage_/_melee_damage":    -0.12,
+    "multishot":                     -0.12,
+    "critical_damage":               -0.14,
+    "critical_chance":               -0.15,
+}
+
+_DEFAULT_NEGATIVE_QUALITY: float = -0.03  # unknown negatives get a mild penalty
+
+
+# ---------------------------------------------------------------------------
+# Percentile scoring
+# ---------------------------------------------------------------------------
+
+def compute_attr_percentile_score(auction: Auction, disposition: int) -> float:
+    """Score an auction by how well-rolled its positive attributes are.
+
+    Averages the normalized roll quality (0.0–1.0) of all positive stats,
+    then applies a small adjustment based on the negative attribute quality.
+
+    Returns a value roughly in [0.0, 1.0]; higher is better-rolled.
+    """
+    pos_attrs = [a for a in auction.attributes if a.positive]
+    neg_attrs = [a for a in auction.attributes if not a.positive]
+    num_positives = len(pos_attrs)
+    has_negative = bool(neg_attrs)
+
+    if not pos_attrs:
+        return 0.0
+
+    avg_pos = sum(
+        min(normalize_roll(a.url_name, a.value, disposition, num_positives, has_negative, True), 1.0)
+        for a in pos_attrs
+    ) / num_positives
+
+    neg_adjustment = 0.0
+    if neg_attrs:
+        neg = neg_attrs[0]
+        severity = min(
+            normalize_roll(neg.url_name, neg.value, disposition, num_positives, has_negative, False),
+            1.0,
+        )
+        neg_adjustment = NEGATIVE_QUALITY.get(neg.url_name, _DEFAULT_NEGATIVE_QUALITY) * severity
+
+    return avg_pos + neg_adjustment
 
 
 def validate_base_stats(cached_url_names: set[str]) -> list[str]:

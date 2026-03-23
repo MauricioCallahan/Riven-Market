@@ -6,6 +6,7 @@ from core.config import DROPDOWN_OPTIONS, VALID_PLATFORMS
 from services.warframe_client import search_auctions_raw, fetch_auction_bids as _fetch_bids_raw
 from core.models import Auction, Bid
 from evaluation.stats import compute_stats
+from evaluation.riven_math import compute_attr_percentile_score
 from services import cache_service as cache
 from services.search_cache import SearchResultCache
 
@@ -305,9 +306,23 @@ def fetch_weapon_auctions(
 
 def search_auctions(filters: dict[str, Any]) -> tuple[dict[str, Any] | None, list[str] | None]:
     """Main entry point: search + compute stats + format for frontend."""
+    # positive_attr_asc/desc are handled client-side; the upstream API does not support them.
+    # Strip the sort before dispatching so the cache key and API call use price_asc.
+    client_side_sort: str | None = None
+    if filters.get("sort_by") in ("positive_attr_asc", "positive_attr_desc"):
+        client_side_sort = filters["sort_by"]
+        filters = {**filters, "sort_by": "price_asc"}
+
     auctions, errors, stale, cached_at = _execute_search(filters)
     if errors:
         return None, errors
+
+    if client_side_sort is not None:
+        reverse = client_side_sort == "positive_attr_desc"
+        auctions.sort(
+            key=lambda a: compute_attr_percentile_score(a, cache.get_disposition(a.weapon_display)),
+            reverse=reverse,
+        )
 
     stats = compute_stats(auctions)
     return {

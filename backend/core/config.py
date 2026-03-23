@@ -14,7 +14,7 @@ WARFRAMESTAT_WEAPONS_URL = "https://api.warframestat.us/weapons"
 # Fields that use a dropdown instead of a free-text entry box.
 # Keys match API param names; values are the valid choices.
 DROPDOWN_OPTIONS = {
-    "sort_by": ["price_asc", "price_desc"],  # positive_attr_asc/desc removed — API returns 500 for these
+    "sort_by": ["positive_attr_asc", "positive_attr_desc", "price_asc", "price_desc"],
     "buyout_policy": ["direct", "auction"],  # "auction" = bid-only; "with_bid" was wrong and returns 400
     "polarity": ["any", "madurai", "vazarin", "naramon", "zenurik", "unairu", "penjaga"],
 }

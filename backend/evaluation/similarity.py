@@ -7,39 +7,7 @@ similarity scores with adjustments for negative stats and reroll distance.
 
 import math
 from core.models import Auction, AttributeInput, RivenAttribute
-from evaluation.riven_math import normalize_roll
-
-
-# ---------------------------------------------------------------------------
-# Negative stat quality scores
-# ---------------------------------------------------------------------------
-
-# Per-stat similarity adjustment when a negative appears on a riven.
-# Positive = desirable negative (boosts similarity), negative = harmful.
-NEGATIVE_QUALITY: dict[str, float] = {
-    # Desirable negatives (positive adjustment)
-    "zoom":                          +0.08,   # best negative in the game
-    "recoil":                        +0.06,
-    "puncture_damage":               +0.05,
-    "impact_damage":                 +0.05,
-    "finisher_damage":               +0.04,   # irrelevant on ranged
-    "chance_to_gain_combo_count":    +0.03,
-    # Neutral negatives (minor or no adjustment)
-    "ammo_maximum":                  +0.02,
-    "status_duration":               +0.01,
-    "magazine_capacity":              0.00,
-    "projectile_speed":               0.00,
-    "reload_speed":                  -0.02,
-    # Undesirable negatives (penalty)
-    "fire_rate_/_attack_speed":      -0.06,
-    "status_chance":                 -0.08,
-    "base_damage_/_melee_damage":    -0.12,
-    "multishot":                     -0.12,
-    "critical_damage":               -0.14,
-    "critical_chance":               -0.15,
-}
-
-_DEFAULT_NEGATIVE_QUALITY: float = -0.03  # unknown negatives get a mild penalty
+from evaluation.riven_math import normalize_roll, NEGATIVE_QUALITY, _DEFAULT_NEGATIVE_QUALITY
 
 # Reroll penalty divisor — higher = gentler penalty
 _REROLL_DIVISOR = 20.0
