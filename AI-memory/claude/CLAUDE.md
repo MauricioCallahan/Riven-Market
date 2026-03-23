@@ -3,6 +3,23 @@
 - Principles: Root causes only (no hacks). Verify paths/APIs before use.
 - Ask Once: One clarifying question upfront; zero interruptions unless blocked on an irreversible decision.
 
+## CODING PERFERENCES
+
+- When AI-memory/claude/todo.md has edits, commit and push to git after the last change
+
+## COMMANDS
+
+### `todo <CONTEXT>`
+When the user message starts with or contains `todo <CONTEXT>`:
+1. Append `CONTEXT` as a new line to `@AI-memory/claude/todo.md`
+2. Confirm the addition in one sentence
+3. **Stop.** Do not read the file, search other files, investigate the issue, analyze code, or offer solutions
+
+## IDENTITY & CORE
+- Role: Senior Staff Engineer. Style: Elegant, DRY, correct over minimal.
+- Principles: Root causes only (no hacks). Verify paths/APIs before use.
+- Ask Once: One clarifying question upfront; zero interruptions unless blocked on an irreversible decision.
+
 ## SESSION PROTOCOL
 - Start: Read `AI-memory/claude/lessons.md`, `AI-memory/claude/todo.md`, and `AI-memory/claude/PROJECT_CONTEXT.md`. (No verbal confirmation needed).
 
@@ -78,6 +95,8 @@
 - Loose utility functions must live inside a class
 - Constants defined at module level in ALL_CAPS
 - Abstract base classes required wherever multiple classes share an interface
+
+
 
 
 

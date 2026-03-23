@@ -414,6 +414,19 @@ export default function FilterSidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <label className="text-xs font-medium uppercase tracking-wider text-foreground">
+            Crossplay
+          </label>
+          <Switch
+            checked={filters.crossplay === "true"}
+            onCheckedChange={(checked) =>
+              onChange({ ...filters, crossplay: checked ? "true" : "false" })
+            }
+            className="data-[state=unchecked]:bg-destructive data-[state=checked]:bg-stat-positive [&>span]:bg-background"
+          />
+        </div>
+
         <FilterField label="Platform">
           <div className="relative">
             <select
@@ -429,19 +442,6 @@ export default function FilterSidebar({
             <SelectChevron />
           </div>
         </FilterField>
-
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-medium uppercase tracking-wider text-foreground">
-            Crossplay
-          </label>
-          <Switch
-            checked={filters.crossplay === "true"}
-            onCheckedChange={(checked) =>
-              onChange({ ...filters, crossplay: checked ? "true" : "false" })
-            }
-            className="data-[state=unchecked]:bg-destructive data-[state=checked]:bg-stat-positive [&>span]:bg-background"
-          />
-        </div>
 
         <FilterField label="Weapon">
           <WeaponCombobox
