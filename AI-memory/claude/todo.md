@@ -14,6 +14,7 @@
   - Color map (add `archetypeColor` alongside `confidenceColor`): **crit** → blue, **status** → orange/amber, **hybrid** → purple, **other** → default/muted.
   - Tooltip descriptions: **Crit** — focuses on critical chance/damage stats; **Status** — focuses on status chance and elemental damage; **Hybrid** — mix of crit and status stats; **Other** — utility or raw damage build.
   - Archetypes come from `backend/evaluation/archetypes.py`. Use shadcn/ui `Tooltip`/`TooltipProvider`/`TooltipContent`.
+- [ ] **UI-010** In `EstimateSheet.tsx` Market Overview section, if there is no starting bid available leave that row blank instead of displaying it.
 
 ### Table & Search
 
@@ -28,7 +29,8 @@
 
 ### Backend Reliability
 
-  - Expose `cache.get_disposition_age() -> timedelta | None`.
+- [ ] **RELY-005** Expose disposition staleness field to `/api/search` response.
+  - Expose `cache.get_disposition_age() -> timedelta | None` in cache.py.
   - Add `disposition_stale: bool` to `/api/search` response — `true` if disposition data is older than 7 days or unavailable. Informational only; never block searches.
   - Field must always be present in response.
   - Commit separately.
@@ -116,7 +118,7 @@
   - Commit separately.
 - [x] **RELY-003** Disposition staleness detection — surface stale disposition data in the search response.
   - In `cache.py`, record a `last_updated: datetime` timestamp whenever disposition data is successfully refreshed from warframestat.us.
-  [x] **VAL-001** Enforce `mastery_rank_min = 8` floor on the mastery rank input — rivens require MR 8 minimum. Clamp or show a validation error in both frontend and backend `validate_filters()`.
+- [x] **VAL-001** Enforce `mastery_rank_min = 8` floor on the mastery rank input — rivens require MR 8 minimum. Clamp or show a validation error in both frontend and backend `validate_filters()`.
 - [x] **VAL-002** Validate that `mastery_rank_min <= mastery_rank_max` when both are set — backend check already existed; added frontend inline warning in FilterSidebar + backend test.
 - [x] **UI-001** When auction results hit the 500-result cap, show a "Showing 500 of X total" indicator. The backend already limits results; this just surfaces the truncation so users know to narrow filters.
 - [x] **UI-003** In `EstimateSheet.tsx` Stat Weights section, filter out stats with 0% weight before rendering — add `.filter(([, weight]) => weight > 0)` before the `.sort()` at line 148. Zero-weight stats contribute nothing to the estimate and clutter the UI.
