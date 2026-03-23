@@ -414,9 +414,14 @@ export default function FilterSidebar({
         <div
           className={`flex flex-1 items-center gap-1.5 min-w-0 transition-opacity duration-150 ${collapsed ? "opacity-0 pointer-events-none" : "opacity-100 delay-200"}`}
         >
-          <h2 className="flex-1 text-lg font-medium tracking-tight text-foreground whitespace-nowrap">
-            Filters
-          </h2>
+          <a
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 flex items-center min-w-0"
+          >
+            <img src="/favicon.ico" alt="Riven Market" className="h-6 w-6 object-contain" />
+          </a>
           <button
             type="button"
             onClick={onEstimate}

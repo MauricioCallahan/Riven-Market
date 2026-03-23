@@ -222,7 +222,7 @@ export default function EstimateSheet({
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(estimate.statWeights)
-                    .filter(([, weight]) => weight > 0)
+                    .filter(([, weight]) => weight >= 0.005)
                     .sort(([, a], [, b]) => b - a)
                     .map(([stat, weight]) => (
                       <span
@@ -247,6 +247,7 @@ export default function EstimateSheet({
                 stats.buyout && { name: "Buyout", low: stats.buyout.min, range: stats.buyout.max - stats.buyout.min, median: stats.buyout.median },
                 stats.topBid && { name: "Top Bid", low: stats.topBid.min, range: stats.topBid.max - stats.topBid.min, median: stats.topBid.median },
               ].filter(Boolean) as { name: string; low: number; range: number; median: number }[];
+              chartData.sort((a, b) => a.low - b.low);
               return (
                 <div className="flex flex-col gap-1.5">
                   <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -300,7 +301,14 @@ export default function EstimateSheet({
                     <thead className="sticky top-0 bg-table-header z-10">
                       <tr>
                         <th className="py-1.5 px-2 text-left font-medium border-b border-border">
-                          Sim
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help border-b border-dotted border-muted-foreground">Sim</span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Similarity score — how closely this listing matches your riven's stat combination. Capped at 100%.
+                            </TooltipContent>
+                          </Tooltip>
                         </th>
                         <th className="py-1.5 px-2 text-left font-medium border-b border-border">
                           Riven
@@ -330,7 +338,7 @@ export default function EstimateSheet({
                             className={`border-b border-border ${i % 2 === 0 ? "bg-card" : "bg-muted"}`}
                           >
                             <td className="py-1.5 px-2 whitespace-nowrap">
-                              {(c.similarity * 100).toFixed(1)}%
+                              {Math.min(c.similarity * 100, 100).toFixed(1)}%
                             </td>
                             <td className="py-1.5 px-2 whitespace-nowrap">
                               <a
@@ -350,7 +358,7 @@ export default function EstimateSheet({
                               {formatNum(c.buyout)}
                             </td>
                             <td className="py-1.5 px-2 text-right whitespace-nowrap">
-                              {formatNum(c.startBid)}
+                              {c.startBid != null ? formatNum(c.startBid) : null}
                             </td>
                             <td className="py-1.5 px-2">
                               <span>

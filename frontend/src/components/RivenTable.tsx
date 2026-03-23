@@ -119,6 +119,15 @@ export default function RivenTable({
   const handleRowClick = (id: string) =>
     onRowSelect(id === selectedId ? null : id);
 
+  // Hide the Weapon column when all visible rows share the same weapon — it's redundant
+  // when the user searched for a specific weapon. Show it when the results are mixed.
+  const showWeaponCol =
+    rows.length === 0 || rows.some((r) => r.weapon !== rows[0].weapon);
+
+  const visibleColumns = showWeaponCol
+    ? columns
+    : columns.filter((c) => c.key !== "weapon");
+
   return (
     <div className="flex-1 flex flex-col min-w-0 min-h-0">
       <div className="flex-1 overflow-auto">
@@ -128,7 +137,7 @@ export default function RivenTable({
         >
           <thead className="sticky top-0 z-10">
             <tr className="bg-table-header">
-              {columns.map((col) => (
+              {visibleColumns.map((col) => (
                 <th
                   key={col.key}
                   className="py-2 px-3 font-medium text-foreground border-b border-border whitespace-nowrap"
@@ -159,7 +168,9 @@ export default function RivenTable({
                         : "bg-muted"
                   } ${!isSelected ? "hover:bg-row-hover" : ""}`}
                 >
-                  <td className="py-2 px-3 whitespace-nowrap">{row.weapon}</td>
+                  {showWeaponCol && (
+                    <td className="py-2 px-3 whitespace-nowrap">{row.weapon}</td>
+                  )}
                   <td className="py-2 px-3 whitespace-nowrap">
                     <a
                       href={row.url}
