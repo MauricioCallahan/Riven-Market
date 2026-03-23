@@ -4,7 +4,7 @@
 
 ### FilterSidebar
 
-- [ ] **UI-008** In `FilterSidebar.tsx`: (1) move the Crossplay toggle row above the Platform dropdown; (2) add spacing between the "Crossplay" label and the `<Switch>` — the current `justify-between` row has no gap, add `gap-3` or a `min-w` on the label so the switch doesn't crowd the text.
+- [x] **UI-008** In `FilterSidebar.tsx`: (1) move the Crossplay toggle row above the Platform dropdown; (2) add spacing between the "Crossplay" label and the `<Switch>` — the current `justify-between` row has no gap, add `gap-3` or a `min-w` on the label so the switch doesn't crowd the text.
 - [ ] **UI-009** In `FilterSidebar.tsx`, replace the "Filters" `<h2>` text with the site logo image (`/logo.png` or wherever the asset lives). Wrap it in an `<a>` tag pointing to `"#"` (placeholder — real URL TBD when the estimates site is created). Open in `target="_blank"`. Keep the Estimate button to the right unchanged.
 - [ ] **UI-007** Add a collapse/expand toggle to `FilterSidebar`. A button (e.g. `PanelLeftClose`/`PanelLeftOpen` lucide icon) in the sidebar header collapses the sidebar to zero width (or a slim icon-only rail). The main content area (`Index.tsx` layout) must use `flex-1` / `w-full` so it fills the freed space automatically. Collapsed state lives in `Index.tsx` as a boolean and is passed as a prop; the sidebar uses a CSS transition (`transition-[width]`) for a smooth slide. The toggle button remains visible in collapsed state so users can re-open.
 
